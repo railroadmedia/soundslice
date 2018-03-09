@@ -1,5 +1,1 @@
 .idea
-.git
-composer.lock
-vendor
-/.env.testing

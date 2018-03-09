@@ -1,11 +1,8 @@
-<?php
-
-namespace Railroad\Soundslice\Providers;
+<?php namespace MyNamespace\MyPackageName;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use Railroad\Soundslice\Services\ConfigService;
 
-class SoundsliceServiceProvider extends ServiceProvider
+class ForumServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap the application services.
@@ -16,18 +13,12 @@ class SoundsliceServiceProvider extends ServiceProvider
     {
         parent::boot();
 
-        $this->setupConfig();
-
+        $this->loadMigrationsFrom(__DIR__ . '/../migrations');
         $this->publishes(
             [
-                __DIR__ . '/../../config/soundslice.php' => config_path('soundslice.php'),
+                __DIR__ . '/../config/my-package-config.php' => config_path('my-package-config.php'),
             ]
         );
-    }
-
-    private function setupConfig()
-    {
-        
     }
 
     /**
