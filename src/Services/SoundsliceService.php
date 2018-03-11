@@ -1,11 +1,6 @@
 <?php
 
 namespace Railroad\Soundslice\Services;
-namespace Railroad\Soundslice\Services;
-namespace Railroad\Soundslice\Services;
-namespace Railroad\Soundslice\Services;
-namespace Railroad\Soundslice\Services;
-namespace Railroad\Soundslice\Services;
 
 use Aws\S3\S3Client;
 use Carbon\Carbon;
@@ -13,40 +8,21 @@ use GuzzleHttp;
 use League\Flysystem\AwsS3v3\AwsS3Adapter;
 use League\Flysystem\Filesystem;
 
-
 class SoundsliceService
 {
     const TYPE_FOR_SCORE= 'soundslice-score';
     const KEY_FOR_SLUG = 'soundslice-slug';
     const KEY_FOR_HASH = 'soundslice-upload-hash';
 
-    /**
-     * @var ContentService
-     */
-    private $contentService;
-
-    /**
-     * @var ContentDatumService
-     */
-    private $contentDatumService;
-
     /** @var Filesystem */
     private $filesystem;
 
     /**
      * SoundsliceService constructor.
-     * @param ContentService $contentService
-     * @param ContentDatumService $contentDatumService
      * @param string $optionalPathPrefix
      */
-    public function __construct(
-//        ContentService $contentService,
-        ContentDatumService $contentDatumService,
-        $optionalPathPrefix = ''
-    ) {
-//        $this->contentService = $contentService;
-        $this->contentDatumService = $contentDatumService;
-
+    public function __construct($optionalPathPrefix = '')
+    {
         $client = new S3Client([
             'credentials' => [
                 'key'    => config('railcontent.awsS3_soundslice.accessKey'),
@@ -141,28 +117,30 @@ class SoundsliceService
 
         $soundsliceSlug = $body->slug;
 
-        $content = $this->contentService->create(
-            $soundsliceSlug,
-            self::TYPE_FOR_SCORE,
-            ContentService::STATUS_PUBLISHED,
-            null,
-            ConfigService::$brand,
-            null,
-            Carbon::now()->subMinute(),
-            null
-        );
+        // todo: replace with firing event and then catching that in Railcontent (or Musora?)
 
-        $contentData = $this->contentDatumService->create($content['id'], self::KEY_FOR_SLUG, $soundsliceSlug, 1);
-
-        if($body->slug !== $contentData['value']){
-            return false;
-        }
-
-        return [
-            'success' => true,
-            'soundsliceSlug' => $body->slug,
-            'contentId' => $content['id']
-        ];
+//        $content = $this->contentService->create(
+//            $soundsliceSlug,
+//            self::TYPE_FOR_SCORE,
+//            ContentService::STATUS_PUBLISHED,
+//            null,
+//            ConfigService::$brand,
+//            null,
+//            Carbon::now()->subMinute(),
+//            null
+//        );
+//
+//        $contentData = $this->contentDatumService->create($content['id'], self::KEY_FOR_SLUG, $soundsliceSlug, 1);
+//
+//        if($body->slug !== $contentData['value']){
+//            return false;
+//        }
+//
+//        return [
+//            'success' => true,
+//            'soundsliceSlug' => $body->slug,
+//            'contentId' => $content['id']
+//        ];
     }
 
     public function list()
@@ -285,15 +263,20 @@ class SoundsliceService
             return false;
         }
 
+        // todo: replace with firing event and then catching that in Railcontent (or Musora?)
+        // though I think we don't need to do this anymore.
+        // though I think we don't need to do this anymore.
+        // though I think we don't need to do this anymore.
+
         // store file hash
 
-        $content = $this->contentService->getBySlugAndType($slug, self::TYPE_FOR_SCORE);
-        $contentId = reset($content)['id'];
-
-        if(!$this->contentDatumService->create($contentId, self::KEY_FOR_HASH, $fileHash, 1)){
-            error_log('Hash creation failed for content-id: ' . $contentId .'.');
-            return false;
-        }
+//        $content = $this->contentService->getBySlugAndType($slug, self::TYPE_FOR_SCORE);
+//        $contentId = reset($content)['id'];
+//
+//        if(!$this->contentDatumService->create($contentId, self::KEY_FOR_HASH, $fileHash, 1)){
+//            error_log('Hash creation failed for content-id: ' . $contentId .'.');
+//            return false;
+//        }
 
         return true;
     }
