@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "de277ec36d8ed66a33525c84d5d327c4",
+    "content-hash": "cfc75ce3c2d863727dee421ebd45a52b",
     "packages": [
         {
             "name": "aws/aws-sdk-php",
@@ -1591,6 +1591,44 @@
                 "simple-cache"
             ],
             "time": "2017-10-23T01:57:42+00:00"
+        },
+        {
+            "name": "railroad/remotestorage",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/railroadmedia/remotestorage.git",
+                "reference": "9ccb9cf36cee409f9b953947abf49551d2eeb7ba"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/railroadmedia/remotestorage/zipball/9ccb9cf36cee409f9b953947abf49551d2eeb7ba",
+                "reference": "9ccb9cf36cee409f9b953947abf49551d2eeb7ba",
+                "shasum": ""
+            },
+            "require": {
+                "aws/aws-sdk-php": "^3.0.0",
+                "guzzlehttp/guzzle": "~6.0",
+                "laravel/framework": "5.6.*",
+                "league/flysystem": "^1.0.40",
+                "league/flysystem-aws-s3-v3": "~1.0",
+                "php": "~7"
+            },
+            "require-dev": {
+                "filp/whoops": "~2.1",
+                "orchestra/testbench": "~3.6",
+                "phpunit/php-code-coverage": "6.0.1",
+                "phpunit/phpunit": "~7.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Railroad\\RemoteStorage\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "description": "Remote storage service",
+            "time": "2018-03-01T15:06:42+00:00"
         },
         {
             "name": "ramsey/uuid",
@@ -4309,7 +4347,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {
+        "railroad/remotestorage": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
