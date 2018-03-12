@@ -23,14 +23,12 @@ class SoundsliceService
     {
         $uri = 'https://www.soundslice.com/' . ltrim($uri, '/'); // so doesn't matter if param has leading slash
 
-        if(!empty($entireUrl)){
-            $uri = $entireUrl;
-        }
+        $uri = !empty($entireUrl) ? $entireUrl : $uri;
 
         if(substr($uri, -1) !== '/'){ // ensure has trailing slash
             $uri = $uri . '/';
         }
-        
+
         if($withAuth){ // At least one method needs to *not* pass authentication.
             $options['auth'] = [env('SOUNDSLICE_APP_ID'), env('SOUNDSLICE_SECRET')];
         }
