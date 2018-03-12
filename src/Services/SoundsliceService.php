@@ -61,8 +61,6 @@ class SoundsliceService
         $printingAllowed = false
     )
     {
-        // todo: if score already exists, no need to create new score (use "GET score" request to soundslice?)
-
         $response = $this->request('api/v1/scores/', 'POST', ['form_params' => [
             'name' => $name,
             'artist' => $artist,
@@ -76,14 +74,24 @@ class SoundsliceService
         // $reason = json_decode((string) $response->getReasonPhrase());
 
         // catch unsuccessful request
-        if(!preg_match('/^(?=.{3})[2]\d*$/', $code)){if($code !== 422 ){error_log('status ' . $code .
-            ' not expected.');}error_log('Failed with error:"' . print_r($body->errors ?? '', true) . '"');
-            return [false, $body->errors ?? 'Very broken. Check the logs.'];
-        }if($code !== 201) {error_log('succeeded but with unexpected code (' . $code . ')');}
+        if(!preg_match('/^(?=.{3})[2]\d*$/', $code)){
+            if($code !== 422 ){
+                error_log('status ' . $code . ' not expected.');
+            }
+            error_log('Failed with error:"' . print_r($body->errors ?? '', true) . '"');
+            return new JsonResponse(['success' => false, 'error' => $body->errors ?? 'Very broken. Check the logs.'];
+        }
+        if($code !== 201) {
+            error_log('succeeded but with unexpected code (' . $code . ')');
+        }
 
+        return new JsonResponse(['success' => true, 'slug' => $body->slug]);
+    }
 
+    public function createNotation($slug, $assetUrl)
+    {
         // step 1: https://www.soundslice.com/help/data-api/#putnotation
-        $urlResponse = $this->request('https://www.soundslice.com/api/v1/scores/' . $body->slug . '/notation/','POST');
+        $urlResponse = $this->request('https://www.soundslice.com/api/v1/scores/' . $slug . '/notation/','POST');
         if(json_decode((string) $urlResponse->getStatusCode()) !== 201){return false;}
 
         $tmp_handle = fopen('php://temp', 'r+'); fwrite($tmp_handle, $assetUrl); rewind($tmp_handle);
@@ -100,8 +108,6 @@ class SoundsliceService
         }
 
         // todo: return what?
-
-        return true;
     }
 
     public function list()
