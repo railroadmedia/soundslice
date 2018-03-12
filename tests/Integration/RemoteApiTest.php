@@ -248,4 +248,196 @@ class RemoteApiTest extends TestCase
             ]
         );
     }
+
+    /**
+     * Response Formats:
+     * [
+     *     "status" => 1
+     *     "print_status" => 3
+     *     "embed_status" => 4
+     *     "recording_count" => 0
+     *     "show_notation" => true
+     *     "can_print" => true
+     *     "embed_url" => "/scores/123abc/embed/"
+     *     "name" => "testing_qui"
+     *     "artist" => "testing_odit"
+     *     "url" => "/scores/123abc/"
+     *     "has_notation" => false
+     * ]
+     */
+    public function testGetScore()
+    {
+        $name = 'testing_' . $this->faker->word;
+        $artist = 'testing_' . $this->faker->word;
+        $status = 1;
+        $embedStatus = 4;
+        $printStatus = 3;
+
+        $client = new Client();
+
+        $response = $client->request(
+            'POST',
+            'https://www.soundslice.com/' . 'api/v1/folders/',
+            [
+                'auth' => $this->auth,
+                'form_params' => [
+                    'name' => $name
+                ],
+            ]
+        );
+
+        $folderId = json_decode($response->getBody(), true)['id'];
+
+        $response = $client->request(
+            'POST',
+            'https://www.soundslice.com/' . 'api/v1/scores/',
+            [
+                'auth' => $this->auth,
+                'form_params' => [
+                    'name' => $name,
+                    'artist' => $artist,
+                    'status' => $status,
+                    'embed_status' => $embedStatus,
+                    'print_status' => $printStatus,
+                    'folder_id' => $folderId,
+                ],
+            ]
+        );
+
+        $scoreSlug = json_decode($response->getBody(), true)['slug'];
+
+        $response = $client->request(
+            'GET',
+            'https://www.soundslice.com/' . 'api/v1/scores/' . $scoreSlug . '/',
+            [
+                'auth' => $this->auth
+            ]
+        );
+
+        $body = json_decode($response->getBody(), true);
+
+        $this->assertEquals(
+            [
+                'name' => $name,
+                'artist' => $artist,
+                'status' => $status,
+                'embed_status' => $embedStatus,
+                'print_status' => $printStatus,
+                'recording_count' => 0,
+                'show_notation' => true,
+                'can_print' => true,
+                'embed_url' => '/scores/' . $scoreSlug . '/embed/',
+                'url' => '/scores/' . $scoreSlug . '/',
+                'has_notation' => false,
+            ],
+            $body
+        );
+
+        // cleanup
+        $response = $client->request(
+            'DELETE',
+            'https://www.soundslice.com/' . 'api/v1/scores/' . $scoreSlug . '/',
+            [
+                'auth' => $this->auth
+            ]
+        );
+
+        $client->request(
+            'DELETE',
+            'https://www.soundslice.com/' . 'api/v1/folders/' . $folderId . '/',
+            [
+                'auth' => $this->auth
+            ]
+        );
+    }
+
+    /**
+     * Response Formats:
+     * [
+     *     "status" => 1
+     *     "print_status" => 3
+     *     "embed_status" => 4
+     *     "recording_count" => 0
+     *     "show_notation" => true
+     *     "can_print" => true
+     *     "embed_url" => "/scores/123abc/embed/"
+     *     "name" => "testing_qui"
+     *     "artist" => "testing_odit"
+     *     "url" => "/scores/123abc/"
+     *     "has_notation" => false
+     * ]
+     */
+    public function testListScores()
+    {
+        $name = 'testing_' . $this->faker->word;
+        $artist = 'testing_' . $this->faker->word;
+        $status = 1;
+        $embedStatus = 4;
+        $printStatus = 3;
+
+        $client = new Client();
+
+        $response = $client->request(
+            'POST',
+            'https://www.soundslice.com/' . 'api/v1/folders/',
+            [
+                'auth' => $this->auth,
+                'form_params' => [
+                    'name' => $name
+                ],
+            ]
+        );
+
+        $folderId = json_decode($response->getBody(), true)['id'];
+
+        $response = $client->request(
+            'POST',
+            'https://www.soundslice.com/' . 'api/v1/scores/',
+            [
+                'auth' => $this->auth,
+                'form_params' => [
+                    'name' => $name,
+                    'artist' => $artist,
+                    'status' => $status,
+                    'embed_status' => $embedStatus,
+                    'print_status' => $printStatus,
+                    'folder_id' => $folderId,
+                ],
+            ]
+        );
+
+        $scoreSlug = json_decode($response->getBody(), true)['slug'];
+
+        $response = $client->request(
+            'GET',
+            'https://www.soundslice.com/' . 'api/v1/scores/',
+            [
+                'auth' => $this->auth
+            ]
+        );
+
+        $body = json_decode($response->getBody(), true);
+
+        $this->assertContains(
+            $name,
+            array_column($body, 'name')
+        );
+
+        // cleanup
+        $response = $client->request(
+            'DELETE',
+            'https://www.soundslice.com/' . 'api/v1/scores/' . $scoreSlug . '/',
+            [
+                'auth' => $this->auth
+            ]
+        );
+
+        $client->request(
+            'DELETE',
+            'https://www.soundslice.com/' . 'api/v1/folders/' . $folderId . '/',
+            [
+                'auth' => $this->auth
+            ]
+        );
+    }
 }
