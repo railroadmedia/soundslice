@@ -79,13 +79,6 @@ class SoundsliceService
 
     // -----------------------------------------------------------------------------------------------------------------
 
-    public function processRemoteAssetUploadEvent($url){
-
-    }
-
-
-    // -----------------------------------------------------------------------------------------------------------------
-
     /**
      * @param string $target
      * @param string $file
@@ -100,7 +93,6 @@ class SoundsliceService
      */
     public function createScore(
         $target,
-        $file,
         $name,
         $folderId = '',
         $artist = '',
@@ -131,25 +123,12 @@ class SoundsliceService
         }if($code !== 201) {error_log('succeeded but with unexpected code (' . $code . ')');}
 
 
-        // -------------------------------------------------------------------------------------------------------------
-        // todo: save uploaded file to s3
-
-        if (!$this->remoteStorageService->put($target, $file)) {
-            return new JsonResponse('RemoteStorageService@put failed', 400);
-        }
-
-        $url = 'https://' . config('soundslice.awsCloudFront') . '/' . $target;
-        $s3Target = '';
-
-        // -------------------------------------------------------------------------------------------------------------
-
-
         // step 1: https://www.soundslice.com/help/data-api/#putnotation
         $urlResponse = $this->request('https://www.soundslice.com/api/v1/scores/' . $body->slug . '/notation/','POST');
         if(json_decode((string) $urlResponse->getStatusCode()) !== 201){return false;}
 
         $tmp_handle = fopen('php://temp', 'r+'); // stackoverflow.com/q/9287368
-        fwrite($tmp_handle, $this->getFile($s3Target));
+        fwrite($tmp_handle, $this->filesystem->read($target));
         rewind($tmp_handle);
         $fileContents = stream_get_contents($tmp_handle);
 
@@ -158,9 +137,10 @@ class SoundsliceService
         );// step 2: https://www.soundslice.com/help/data-api/#putnotation
 
         fclose($tmp_handle); // clean up temporary storage handle
-        if(!$notationResponse->getStatusCode() === 200){return false;}
 
-        // todo: replace with firing event with soundslice slug
+        if(!$notationResponse->getStatusCode() === 200){
+            return false;
+        }
 
         // todo: return what?
 
@@ -230,36 +210,5 @@ class SoundsliceService
 
         return $status == 201;
     }
-
-    public function getFile($target)
-    {
-        return $this->filesystem->read($target);
-    }
-
-    public function getHashFromFile($fileContents)
-    {
-        return sha1(substr($fileContents, 0, 1024));
-    }
-
-    public function uploadNotationFromS3($slug, $s3Target)
-    {
-
-    }
-
-    public function processNotificationUploadCallback()
-    {
-//        $scoreSlug
-//        $scoreSlug
-//        $scoreSlug
-//        $scoreSlug
-
-        // or hash?
-    }
-
-//    public function getSize($target)
-//    {
-//        return $this->filesystem->getSize($target);
-//    }
-
 }
 

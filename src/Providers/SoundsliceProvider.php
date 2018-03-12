@@ -13,12 +13,9 @@ class SoundsliceServiceProvider extends ServiceProvider
     {
         parent::boot();
 
-        $this->loadMigrationsFrom(__DIR__ . '/../migrations');
-        $this->publishes(
-            [
-                __DIR__ . '/../config/soundslice.php' => config_path('soundslice.php'),
-            ]
-        );
+        $this->publishes([
+            __DIR__ . '/../config/soundslice.php' => config_path('soundslice.php'),
+        ]);
     }
 
     /**
