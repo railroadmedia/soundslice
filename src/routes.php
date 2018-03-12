@@ -1,48 +1,48 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Railroad\Soundslice\Controllers\SoundsliceController;
+use Railroad\Soundslice\Controllers\SoundsliceJsonController;
 
 Route::prefix('soundslice')->group(function () {
 
     Route::put(
         'create',
-        SoundsliceController::class . '@create'
+        SoundsliceJsonController::class . '@create'
     )->name('soundslice.create');
 
     Route::get(
         'get/{slug}',
-        SoundsliceController::class . '@get'
+        SoundsliceJsonController::class . '@get'
     )->name('soundslice.get');
 
     Route::get(
         'list',
-        SoundsliceController::class . '@list'
+        SoundsliceJsonController::class . '@list'
     )->name('soundslice.list');
 
     Route::delete(
         'delete',
-        SoundsliceController::class . '@delete'
+        SoundsliceJsonController::class . '@delete'
     )->name('soundslice.delete');
 
     Route::post(
         'move',
-        SoundsliceController::class . '@move'
+        SoundsliceJsonController::class . '@move'
     )->name('soundslice.move');
 
     Route::prefix('folder')->group(function(){
         Route::put(
             'create',
-            SoundsliceController::class . '@createFolder'
+            SoundsliceJsonController::class . '@createFolder'
         )->name('soundslice.folder.create');
 
         Route::delete(
             'delete',
-            SoundsliceController::class . '@deleteFolder'
+            SoundsliceJsonController::class . '@deleteFolder'
         )->name('soundslice.folder.delete');
     });
     Route::put(
         'notation',
-        SoundsliceController::class . '@createNotation'
+        SoundsliceJsonController::class . '@createNotation'
     )->name('soundslice.notation.upload');
 });

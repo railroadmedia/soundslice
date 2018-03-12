@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use PHPUnit\Util\Json;
 use Railroad\Soundslice\Services\SoundsliceService;
 
-class SoundsliceController
+class SoundsliceJsonController
 {
     /**
      * @var SoundsliceService
