@@ -51,14 +51,13 @@ class SoundsliceTest extends TestCase
         return 'TEST_ ' . $specialTerm . 'SoundsliceServiceTest_' . time() . '_' . rand(000, 999);
     }
 
-//    public function test_confirm_testing_config_set_correctly()
-//    {
-//        var_dump($this->app['config']['soundslice']['awsS3']);
-//        var_dump([env('SOUNDSLICE_APP_ID'), env('SOUNDSLICE_SECRET')]); die();
-//    }
-
     // -----------------------------------------------------------------------------------------------------------------
 
+    public function test_list()
+    {
+        $response = $this->call('GET', 'soundslice/list');
 
+        $this->assertNotEquals('404', $response->getStatusCode());
+    }
 
 }
