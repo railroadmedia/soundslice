@@ -29,7 +29,7 @@ class SoundsliceServiceTest extends TestCase
         $this->soundSliceService = $this->app->make(SoundsliceService::class);
     }
 
-    public function testCreateFolderNoParent()
+    public function testCreateFolder()
     {
         $name = 'testing_' . time() . '_' . $this->faker->word;
         $parentId = null;
@@ -46,5 +46,52 @@ class SoundsliceServiceTest extends TestCase
         );
 
         $this->assertEquals($expectedFolderId, $folderId);
+    }
+
+    public function testDeleteFolder()
+    {
+        $expectedParentId = rand();
+
+        $mock = new MockHandler([new Response(201, [], json_encode(['parent_id' => $expectedParentId]))]);
+
+        $this->soundSliceService = new SoundsliceService(new Client(['handler' => HandlerStack::create($mock)]));
+
+        $parentId = $this->soundSliceService->deleteFolder(rand());
+
+        $this->assertEquals($expectedParentId, $parentId);
+    }
+
+    public function testCreateScore()
+    {
+        $expectedSlug = rand();
+        $expectedUrl = $this->faker->url;
+        $expectedEmbed = $this->faker->url;
+
+        $mock = new MockHandler(
+            [
+                new Response(
+                    201, [], json_encode(
+                        [
+                            'slug' => $expectedSlug,
+                            'url' => $expectedUrl,
+                            'embed_url' => $expectedEmbed,
+                        ]
+                    )
+                )
+            ]
+        );
+
+        $this->soundSliceService = new SoundsliceService(new Client(['handler' => HandlerStack::create($mock)]));
+
+        $slug = $this->soundSliceService->createScore(
+            $this->faker->word,
+            $this->faker->word,
+            rand(),
+            true,
+            true,
+            true
+        );
+
+        $this->assertEquals($expectedSlug, $slug);
     }
 }
