@@ -32,25 +32,17 @@ Route::prefix('soundslice')->group(function () {
 
     Route::prefix('folder')->group(function(){
         Route::put(
-            'folder/create',
+            'create',
             SoundsliceController::class . '@createFolder'
         )->name('soundslice.folder.create');
 
         Route::delete(
-            'folder/delete',
+            'delete',
             SoundsliceController::class . '@deleteFolder'
         )->name('soundslice.folder.delete');
     });
-
-    Route::prefix('notation')->group(function() {
-        Route::put(
-            'upload',
-            SoundsliceController::class . '@uploadNotation'
-        )->name('soundslice.notation.upload');
-
-        Route::post(
-            'attach',
-            SoundsliceController::class . '@attachNotation'
-        )->name('soundslice.notation.attach');
-    });
+    Route::put(
+        'notation',
+        SoundsliceController::class . '@createNotation'
+    )->name('soundslice.notation.upload');
 });
