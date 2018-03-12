@@ -90,7 +90,7 @@ class SoundsliceServiceTest extends TestCase
             true,
             true,
             true
-        )['slug'];
+        );
 
         $this->assertEquals($expectedSlug, $slug);
     }
@@ -115,7 +115,7 @@ class SoundsliceServiceTest extends TestCase
 
         $this->soundSliceService = new SoundsliceService(new Client(['handler' => HandlerStack::create($mock)]));
 
-        $this->assertTrue($this->soundSliceService->delete($this->faker->word));
+        $this->assertTrue($this->soundSliceService->deleteScore($this->faker->word));
     }
 
     public function testGetScore()

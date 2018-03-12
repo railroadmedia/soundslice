@@ -492,14 +492,6 @@ class RemoteApiTest extends TestCase
             'https://www.soundslice.com/' . 'api/v1/scores/' . $scoreSlug . '/notation/',
             [
                 'auth' => $this->auth,
-                'form_params' => [
-                    'name' => $name,
-                    'artist' => $artist,
-                    'status' => $status,
-                    'embed_status' => $embedStatus,
-                    'print_status' => $printStatus,
-                    'folder_id' => $folderId,
-                ],
             ]
         );
 

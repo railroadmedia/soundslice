@@ -2,14 +2,17 @@
 
 namespace Railroad\Soundslice\Services;
 
+use Exception;
 use GuzzleHttp\Client;
 use Illuminate\Http\JsonResponse;
 
 class SoundsliceService
 {
-    const TYPE_FOR_SCORE= 'soundslice-score';
+    const TYPE_FOR_SCORE = 'soundslice-score';
     const KEY_FOR_SLUG = 'soundslice-slug';
     const KEY_FOR_HASH = 'soundslice-upload-hash';
+
+    private $auth;
 
     /**
      * @var Client
@@ -22,23 +25,7 @@ class SoundsliceService
     public function __construct(Client $client)
     {
         $this->client = $client;
-    }
-
-    private function request($uri, $method = 'GET', $options = [], $withAuth = true, $entireUrl = '')
-    {
-        $uri = 'https://www.soundslice.com/' . ltrim($uri, '/'); // so doesn't matter if param has leading slash
-
-        $uri = !empty($entireUrl) ? $entireUrl : $uri;
-
-        if(substr($uri, -1) !== '/'){ // ensure has trailing slash
-            $uri = $uri . '/';
-        }
-
-        if($withAuth){ // At least one method needs to *not* pass authentication.
-            $options['auth'] = [env('SOUNDSLICE_APP_ID'), env('SOUNDSLICE_SECRET')];
-        }
-
-        return $this->client->request($method, $uri, $options);
+        $this->auth = [app('config')['soundslice.soundsliceAppId'], app('config')['soundslice.soundsliceSecret']];
     }
 
     /**
@@ -50,6 +37,7 @@ class SoundsliceService
      * @param bool $embedWhiteListOnly
      * @param bool $printingAllowed
      * @return array|bool|JsonResponse
+     * @throws Exception
      */
     public function createScore(
         $name,
@@ -59,151 +47,203 @@ class SoundsliceService
         $embedWhiteListOnly = false,
         $embedGlobally = false,
         $printingAllowed = false
-    )
-    {
-        $response = $this->request( // https://www.soundslice.com/help/data-api/#createscore
-            'api/v1/scores/',
+    ) {
+        $response = $this->client->request(
             'POST',
+            'https://www.soundslice.com/api/v1/scores/',
             [
+                'auth' => $this->auth,
                 'form_params' => [
                     'name' => $name,
                     'artist' => $artist,
                     'status' => $publiclyListed ? 3 : 1,
                     'embed_status' => $embedWhiteListOnly ? 4 : ($embedGlobally ? 2 : 1),
                     'print_status' => $printingAllowed ? 3 : 1,
-                    'folder_id' => $folderId
-                ]
+                    'folder_id' => $folderId,
+                ],
             ]
         );
 
-        $body = json_decode((string) $response->getBody());
-        $code = json_decode((string) $response->getStatusCode());
-        // $reason = json_decode((string) $response->getReasonPhrase());
+        $body = json_decode($response->getBody(), true);
+        $code = $response->getStatusCode();
 
-        // catch unsuccessful request
-        if(!preg_match('/^(?=.{3})[2]\d*$/', $code)){
-            if($code !== 422 ){
-                error_log('status ' . $code . ' not expected.');
-            }
-            error_log('Failed with error:"' . print_r($body->errors ?? '', true) . '"');
-            return ['success' => false, 'error' => $body->errors ?? 'Very broken. Check the logs.'];
-        }
-        if($code !== 201) {
-            error_log('succeeded but with unexpected code (' . $code . ')');
-        }
-        if(empty($body->slug)){
-            return ['success' => false, 'error' => 'Succeeded but no value returned for slug'];
+        if ($code !== 201) {
+            // todo: replace with custom exception class
+            throw new Exception($body['error'], $code);
         }
 
-        return ['success' => true, 'slug' => $body->slug];
+        return $body['slug'];
     }
 
     /**
      * @param $slug
      * @param $assetUrl
      * @return bool
+     * @throws Exception
      */
     public function addNotation($slug, $assetUrl)
     {
-        // get asset file data
+        $notationXml = file_get_contents($assetUrl);
 
-        $tmp_handle = fopen('php://temp', 'r+');
-        fwrite($tmp_handle, $assetUrl);
-        rewind($tmp_handle);
-        $fileContents = stream_get_contents($tmp_handle); // stackoverflow.com/q/9287368
-
-        // Soundslice-Notation-Upload Step 1: https://www.soundslice.com/help/data-api/#putnotation
-
-        $urlResponse = $this->request('https://www.soundslice.com/api/v1/scores/' . $slug . '/notation/','POST');
-        $providedUploadUrl = ((array) json_decode((string) $urlResponse->getBody()))['url'];
-
-        if(json_decode((string) $urlResponse->getStatusCode()) !== 201){
-            return false;
-        }
-
-        // Soundslice-Notation-Upload Step 2: https://www.soundslice.com/help/data-api/#putnotation
-
-        $notationResponse = $this->request(
-            '',
-            'PUT',
-            ['body' => $fileContents],
-            false,
-            $providedUploadUrl
+        $response = $this->client->request(
+            'POST',
+            'https://www.soundslice.com/api/v1/scores/' . $slug . '/notation/',
+            [
+                'auth' => $this->auth,
+            ]
         );
 
-        // We're done; close everything up
+        $body = json_decode($response->getBody(), true);
+        $code = $response->getStatusCode();
 
-        fclose($tmp_handle); // clean up temporary storage handle
+        if ($code !== 201) {
+            // todo: replace with custom exception class
+            throw new Exception($body['error'], $code);
+        }
 
-        if($notationResponse->getStatusCode() !== 200){
-            return false;
+        $response = $this->client->request(
+            'PUT',
+            $body['url'],
+            [
+                'body' => $notationXml,
+            ]
+        );
+
+        $body = json_decode($response->getBody(), true);
+        $code = $response->getStatusCode();
+
+        if ($code !== 201 && $code !== 200) {
+            // todo: replace with custom exception class
+            throw new Exception($body['error'], $code);
         }
 
         return true;
     }
 
-    public function list()
+    /**
+     * @return array
+     */
+    public function listScores()
     {
-        $response = $this->request('api/v1/scores/');
+        $response = $this->client->request(
+            'GET',
+            'https://www.soundslice.com/' . 'api/v1/scores/',
+            [
+                'auth' => $this->auth
+            ]
+        );
 
-        $body = (array) json_decode((string) $response->getBody());
+        $body = json_decode($response->getBody(), true);
 
         return $body;
     }
 
+    /**
+     * @param $name
+     * @return bool
+     * @throws Exception
+     */
     public function createFolder($name)
     {
-        $response = $this->request('api/v1/folders/', 'POST', ['form_params' => ['name' => $name]]);
-        $body = (array) json_decode((string) $response->getBody());
-        return $body['id'] ?? false;
-    }
+        $response = $this->client->request(
+            'POST',
+            'https://www.soundslice.com/' . 'api/v1/folders/',
+            [
+                'auth' => $this->auth,
+                'form_params' => [
+                    'name' => $name
+                ],
+            ]
+        );
 
-    public function deleteFolder($id)
-    {
-        $uri = 'api/v1/folders/' . (string) $id;
-        $response = $this->request($uri, 'DELETE');
+        $body = json_decode($response->getBody(), true);
+        $code = $response->getStatusCode();
 
-        //$body = (array) json_decode((string) $response->getBody());
-        $status = json_decode((string) $response->getStatusCode());
-
-        $success = ($status == 201 || $status == 200) ?? false;
-
-        return $success;
-    }
-
-    public function get($slug)
-    {
-        $response = $this->request('api/v1/scores/' . $slug);
-
-        if(is_null($response)){
-            return false;
+        if ($code !== 201) {
+            // todo: replace with custom exception class
+            throw new Exception($body['error'], $code);
         }
 
-        $body = (array) json_decode((string) $response->getBody());
-        $status = json_decode((string) $response->getStatusCode());
+        return $body['id'];
+    }
 
-        if($status !== 201 && $status !== 200){ // Soundslice's docs says expect 201, but we're getting 200. No idea why.
-            return false;
+    /**
+     * @param $id
+     * @return bool
+     * @throws Exception
+     */
+    public function deleteFolder($id)
+    {
+        $response = $this->client->request(
+            'DELETE',
+            'https://www.soundslice.com/' . 'api/v1/folders/' . $id . '/',
+            [
+                'auth' => $this->auth
+            ]
+        );
+
+        $body = json_decode($response->getBody(), true);
+        $code = $response->getStatusCode();
+
+        if ($code !== 201) {
+            // todo: replace with custom exception class
+            throw new Exception($body['error'], $code);
+        }
+
+        return true;
+    }
+
+    /**
+     * @param $slug
+     * @return mixed
+     * @throws Exception
+     */
+    public function getScore($slug)
+    {
+        $response = $this->client->request(
+            'GET',
+            'https://www.soundslice.com/' . 'api/v1/scores/' . $slug . '/',
+            [
+                'auth' => $this->auth
+            ]
+        );
+
+        $body = json_decode($response->getBody(), true);
+        $code = $response->getStatusCode();
+
+        if ($code !== 201) {
+            // todo: replace with custom exception class
+            throw new Exception($body['error'], $code);
         }
 
         return $body;
     }
 
     /**
+     *
      * @param $slug
      * @return bool
-     *
-     * https://www.soundslice.com/help/data-api/#deletescore
+     * @throws Exception
      */
-    public function delete($slug)
+    public function deleteScore($slug)
     {
-        $uri = 'api/v1/scores/' . $slug;
-        $response = $this->request($uri, 'delete');
+        $response = $this->client->request(
+            'DELETE',
+            'https://www.soundslice.com/' . 'api/v1/scores/' . $slug . '/',
+            [
+                'auth' => $this->auth
+            ]
+        );
 
-        // $body = (array) json_decode((string) $response->getBody());
-        $status = json_decode((string) $response->getStatusCode());
+        $body = json_decode($response->getBody(), true);
+        $code = $response->getStatusCode();
 
-        return $status == 201;
+        if ($code !== 201) {
+            // todo: replace with custom exception class
+            throw new Exception($body['error'], $code);
+        }
+
+        return true;
     }
 }
 
