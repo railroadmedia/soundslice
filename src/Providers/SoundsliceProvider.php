@@ -2,7 +2,7 @@
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
-class ForumServiceProvider extends ServiceProvider
+class SoundsliceServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap the application services.
@@ -16,7 +16,7 @@ class ForumServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__ . '/../migrations');
         $this->publishes(
             [
-                __DIR__ . '/../config/my-package-config.php' => config_path('my-package-config.php'),
+                __DIR__ . '/../config/soundslice.php' => config_path('soundslice.php'),
             ]
         );
     }

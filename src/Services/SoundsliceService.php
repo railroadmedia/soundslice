@@ -5,8 +5,12 @@ namespace Railroad\Soundslice\Services;
 use Aws\S3\S3Client;
 use Carbon\Carbon;
 use GuzzleHttp;
+use Illuminate\Http\JsonResponse;
 use League\Flysystem\AwsS3v3\AwsS3Adapter;
 use League\Flysystem\Filesystem;
+use Railroad\RemoteStorage\Events\PutEvent;
+use Railroad\RemoteStorage\Services\RemoteStorageService;
+use Railroad\Soundslice\RemoteAssetUploadEvent;
 
 class SoundsliceService
 {
@@ -16,26 +20,36 @@ class SoundsliceService
 
     /** @var Filesystem */
     private $filesystem;
+    /**
+     * @var RemoteStorageService
+     */
+    private $remoteStorageService;
 
     /**
      * SoundsliceService constructor.
      * @param string $optionalPathPrefix
+     * @param RemoteStorageService $remoteStorageService
      */
-    public function __construct($optionalPathPrefix = '')
+    public function __construct(
+        $optionalPathPrefix = '',
+        RemoteStorageService $remoteStorageService
+    )
     {
         $client = new S3Client([
             'credentials' => [
-                'key'    => config('railcontent.awsS3_soundslice.accessKey'),
-                'secret' => config('railcontent.awsS3_soundslice.accessSecret')
+                'key'    => config('soundslice.awsS3.accessKey'),
+                'secret' => config('soundslice.awsS3.accessSecret')
             ],
-            'region' => config('railcontent.awsS3_soundslice.region'),
+            'region' => config('soundslice.awsS3.region'),
             'version' => 'latest',
         ]);
 
         $adapter = new AwsS3Adapter(
-            $client, config('railcontent.awsS3_soundslice.bucket'), $optionalPathPrefix
+            $client, config('soundslice.awsS3.bucket'), $optionalPathPrefix
         );
         $this->filesystem = new Filesystem($adapter);
+
+        $this->remoteStorageService = $remoteStorageService;
     }
 
     private function request($uri, $method = 'GET', $options = [], $withAuth = true, $entireUrl = ''){
@@ -63,7 +77,18 @@ class SoundsliceService
         return $response;
     }
 
+    // -----------------------------------------------------------------------------------------------------------------
+
+    public function processRemoteAssetUploadEvent($url){
+
+    }
+
+
+    // -----------------------------------------------------------------------------------------------------------------
+
     /**
+     * @param string $target
+     * @param string $file
      * @param string $name
      * @param int|string $folderId
      * @param string $artist
@@ -71,9 +96,11 @@ class SoundsliceService
      * @param bool $embedGlobally
      * @param bool $embedWhiteListOnly
      * @param bool $printingAllowed
-     * @return array|boolean
+     * @return array|bool|JsonResponse
      */
     public function createScore(
+        $target,
+        $file,
         $name,
         $folderId = '',
         $artist = '',
@@ -103,8 +130,19 @@ class SoundsliceService
             return [false, $body->errors ?? 'Very broken. Check the logs.'];
         }if($code !== 201) {error_log('succeeded but with unexpected code (' . $code . ')');}
 
+
+        // -------------------------------------------------------------------------------------------------------------
         // todo: save uploaded file to s3
-        // use remoteStorage?
+
+        if (!$this->remoteStorageService->put($target, $file)) {
+            return new JsonResponse('RemoteStorageService@put failed', 400);
+        }
+
+        $url = 'https://' . config('soundslice.awsCloudFront') . '/' . $target;
+        $s3Target = '';
+
+        // -------------------------------------------------------------------------------------------------------------
+
 
         // step 1: https://www.soundslice.com/help/data-api/#putnotation
         $urlResponse = $this->request('https://www.soundslice.com/api/v1/scores/' . $body->slug . '/notation/','POST');

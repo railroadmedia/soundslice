@@ -2,8 +2,8 @@
 
 namespace Railroad\Soundslice\Tests\Acceptance;
 
-
 use Orchestra\Testbench\TestCase;
+use Railroad\Soundslice\Services\SoundsliceService;
 
 class SoundsliceTest extends TestCase
 {
@@ -29,15 +29,16 @@ class SoundsliceTest extends TestCase
         if (empty(env('AWS_S3_SOUNDSLICE_BUCKET'))) { $this->fail("You must provide a value for the " .
             "AWS_S3_SOUNDSLICE_BUCKET \'putenv' (environmental variable setting) function in `/.env.testing`.");}
 
-        $this->app['config']->set(
-            'railcontent.awsS3_soundslice',
-            [
-                'accessKey' => env('AWS_S3_SOUNDSLICE_ACCESS_KEY'),
-                'accessSecret' => env('AWS_S3_SOUNDSLICE_ACCESS_SECRET'),
-                'region' => env('AWS_S3_SOUNDSLICE_REGION'),
-                'bucket' => env('AWS_S3_SOUNDSLICE_BUCKET')
-            ]
-        );
+        $this->app['config']->set('soundslice.awsS3',[
+            'accessKey' => env('AWS_S3_SOUNDSLICE_ACCESS_KEY'),
+            'accessSecret' => env('AWS_S3_SOUNDSLICE_ACCESS_SECRET'),
+            'region' => env('AWS_S3_SOUNDSLICE_REGION'),
+            'bucket' => env('AWS_S3_SOUNDSLICE_BUCKET')
+        ]);
+        $this->app['config']->set('soundslice.awsCloudFront', env('AWS_CLOUDFRONT_SOUNDSLICE'));
+        $this->app['config']->set('soundslice.soundsliceAppId', env('SOUNDSLICE_APP_ID'));
+        $this->app['config']->set('soundslice.soundsliceSecret', env('SOUNDSLICE_SECRET'));
+        $this->app['config']->set('soundslice.notationKeySignifier', env('NOTATION_KEY_SIGNIFIER'));
 
         $this->soundSliceService = $this->app->make(SoundsliceService::class);
     }
@@ -70,7 +71,14 @@ class SoundsliceTest extends TestCase
         return 'TEST_ ' . $specialTerm . 'SoundsliceServiceTest_' . time() . '_' . rand(000, 999);
     }
 
+//    public function test_confirm_testing_config_set_correctly()
+//    {
+//        var_dump($this->app['config']['soundslice']['awsS3']);
+//        var_dump([env('SOUNDSLICE_APP_ID'), env('SOUNDSLICE_SECRET')]); die();
+//    }
+
     // -----------------------------------------------------------------------------------------------------------------
+
 
 
 }
