@@ -47,7 +47,7 @@ class SoundsliceController
         $slug = $request->get('slug');
         $assetUrl = $request->get('assetUrl');
 
-        $response = $this->soundsliceService->createNotation($slug, $assetUrl);
+        $response = $this->soundsliceService->addNotation($slug, $assetUrl);
 
         return new JsonResponse($response);
     }

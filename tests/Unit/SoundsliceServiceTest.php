@@ -117,4 +117,76 @@ class SoundsliceServiceTest extends TestCase
 
         $this->assertTrue($this->soundSliceService->delete($this->faker->word));
     }
+
+    public function testGetScore()
+    {
+        $expectedSlug = $this->faker->word;
+        $expectedName = $this->faker->word;
+        $expectedArtist = $this->faker->word;
+        $expectedStatus = 1;
+        $expectedEmbedStatus = 4;
+        $expectedPrintStatus = 3;
+
+        $mock = new MockHandler(
+            [
+                new Response(
+                    201, [], json_encode(
+                        [
+                            'name' => $expectedName,
+                            'artist' => $expectedArtist,
+                            'status' => $expectedStatus,
+                            'embed_status' => $expectedEmbedStatus,
+                            'print_status' => $expectedPrintStatus,
+                            'recording_count' => 0,
+                            'show_notation' => true,
+                            'can_print' => true,
+                            'embed_url' => '/scores/' . $expectedSlug . '/embed/',
+                            'url' => '/scores/' . $expectedSlug . '/',
+                            'has_notation' => false,
+                        ]
+                    )
+                )
+            ]
+        );
+
+        $this->soundSliceService = new SoundsliceService(new Client(['handler' => HandlerStack::create($mock)]));
+
+        $score = $this->soundSliceService->getScore($expectedSlug);
+
+        $this->assertEquals(
+            [
+                'name' => $expectedName,
+                'artist' => $expectedArtist,
+                'status' => $expectedStatus,
+                'embed_status' => $expectedEmbedStatus,
+                'print_status' => $expectedPrintStatus,
+                'recording_count' => 0,
+                'show_notation' => true,
+                'can_print' => true,
+                'embed_url' => '/scores/' . $expectedSlug . '/embed/',
+                'url' => '/scores/' . $expectedSlug . '/',
+                'has_notation' => false,
+            ],
+            $score
+        );
+    }
+
+    public function testAddNotation()
+    {
+        $expectedUrl = $this->faker->url;
+        $assetUrl = $this->faker->imageUrl(1, 1);
+
+        $mock = new MockHandler(
+            [
+                new Response(201, [], json_encode(['url' => $expectedUrl,])),
+                new Response(200, [], json_encode([]))
+            ]
+        );
+
+        $this->soundSliceService = new SoundsliceService(new Client(['handler' => HandlerStack::create($mock)]));
+
+        $success = $this->soundSliceService->addNotation($this->faker->word, $assetUrl);
+
+        $this->assertTrue($success);
+    }
 }

@@ -101,9 +101,9 @@ class SoundsliceService
     /**
      * @param $slug
      * @param $assetUrl
-     * @return array
+     * @return bool
      */
-    public function createNotation($slug, $assetUrl)
+    public function addNotation($slug, $assetUrl)
     {
         // get asset file data
 
@@ -118,10 +118,7 @@ class SoundsliceService
         $providedUploadUrl = ((array) json_decode((string) $urlResponse->getBody()))['url'];
 
         if(json_decode((string) $urlResponse->getStatusCode()) !== 201){
-            return [
-                'success' => false,
-                'error' => 'Soundslice API Response didn\'t match expected 201 status'
-            ];
+            return false;
         }
 
         // Soundslice-Notation-Upload Step 2: https://www.soundslice.com/help/data-api/#putnotation
@@ -139,13 +136,10 @@ class SoundsliceService
         fclose($tmp_handle); // clean up temporary storage handle
 
         if($notationResponse->getStatusCode() !== 200){
-            return [
-                'success' => false,
-                'error' => 'Soundslice API Response for notation POST didn\'t match expected 200 status'
-            ];
+            return false;
         }
 
-        return ['success' => true];
+        return true;
     }
 
     public function list()
