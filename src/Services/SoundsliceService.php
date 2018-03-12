@@ -88,7 +88,7 @@ class SoundsliceService
         if($code !== 201) {
             error_log('succeeded but with unexpected code (' . $code . ')');
         }
-        if(empty($body->slug){
+        if(empty($body->slug)){
             return ['success' => false, 'error' => 'Succeeded but no value returned for slug'];
         }
 
