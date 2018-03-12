@@ -9,6 +9,12 @@ use GuzzleHttp\Psr7\Response;
 use Railroad\Soundslice\Services\SoundsliceService;
 use Railroad\Soundslice\Tests\TestCase;
 
+/**
+ * http://docs.guzzlephp.org/en/stable/testing.html#mock-handler
+ *
+ * Class SoundsliceServiceTest
+ * @package Railroad\Soundslice\Tests\Acceptance
+ */
 class SoundsliceServiceTest extends TestCase
 {
     /**
@@ -30,15 +36,9 @@ class SoundsliceServiceTest extends TestCase
 
         $expectedFolderId = rand();
 
-        $mock = new MockHandler(
-            [
-                new Response(201, [], json_encode(['id' => $expectedFolderId])),
-            ]
-        );
+        $mock = new MockHandler([new Response(201, [], json_encode(['id' => $expectedFolderId]))]);
 
-        $this->soundSliceService = new SoundsliceService(
-            new Client(['handler' => HandlerStack::create($mock)])
-        );
+        $this->soundSliceService = new SoundsliceService(new Client(['handler' => HandlerStack::create($mock)]));
 
         $folderId = $this->soundSliceService->createFolder(
             $name,
