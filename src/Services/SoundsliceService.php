@@ -2,15 +2,8 @@
 
 namespace Railroad\Soundslice\Services;
 
-use Aws\S3\S3Client;
-use Carbon\Carbon;
 use GuzzleHttp;
 use Illuminate\Http\JsonResponse;
-use League\Flysystem\AwsS3v3\AwsS3Adapter;
-use League\Flysystem\Filesystem;
-use Railroad\RemoteStorage\Events\PutEvent;
-use Railroad\RemoteStorage\Services\RemoteStorageService;
-use Railroad\Soundslice\RemoteAssetUploadEvent;
 
 class SoundsliceService
 {
@@ -18,70 +11,37 @@ class SoundsliceService
     const KEY_FOR_SLUG = 'soundslice-slug';
     const KEY_FOR_HASH = 'soundslice-upload-hash';
 
-    /** @var Filesystem */
-    private $filesystem;
-    /**
-     * @var RemoteStorageService
-     */
-    private $remoteStorageService;
-
     /**
      * SoundsliceService constructor.
-     * @param string $optionalPathPrefix
-     * @param RemoteStorageService $remoteStorageService
      */
-    public function __construct(
-        $optionalPathPrefix = '',
-        RemoteStorageService $remoteStorageService
-    )
+    public function __construct()
     {
-        $client = new S3Client([
-            'credentials' => [
-                'key'    => config('soundslice.awsS3.accessKey'),
-                'secret' => config('soundslice.awsS3.accessSecret')
-            ],
-            'region' => config('soundslice.awsS3.region'),
-            'version' => 'latest',
-        ]);
 
-        $adapter = new AwsS3Adapter(
-            $client, config('soundslice.awsS3.bucket'), $optionalPathPrefix
-        );
-        $this->filesystem = new Filesystem($adapter);
-
-        $this->remoteStorageService = $remoteStorageService;
     }
 
-    private function request($uri, $method = 'GET', $options = [], $withAuth = true, $entireUrl = ''){
-
-        // ltrim to make sure param can have leading slash or not - doesn't matter because of ltrim here.
-        $uri = 'https://www.soundslice.com/' . ltrim($uri, '/');
+    private function request($uri, $method = 'GET', $options = [], $withAuth = true, $entireUrl = '')
+    {
+        $uri = 'https://www.soundslice.com/' . ltrim($uri, '/'); // so doesn't matter if param has leading slash
 
         if(!empty($entireUrl)){
             $uri = $entireUrl;
         }else{
-            // ensure has trailing slash - otherwise request will not work and you will hate life.
-            if(substr($uri, -1) !== '/'){
+            if(substr($uri, -1) !== '/'){ // ensure has trailing slash
                 $uri = $uri . '/';
             }
         }
-
-        // At least one method needs to *not* pass authentication.
-        if($withAuth){
+        if($withAuth){ // At least one method needs to *not* pass authentication.
             $options['auth'] = [env('SOUNDSLICE_APP_ID'), env('SOUNDSLICE_SECRET')];
         }
 
         $client = new GuzzleHttp\Client();
-        $response = $client->request($method, $uri, $options);
-
-        return $response;
+        return $client->request($method, $uri, $options);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * @param string $target
-     * @param string $file
+     * @param string $assetUrl
      * @param string $name
      * @param int|string $folderId
      * @param string $artist
@@ -92,7 +52,7 @@ class SoundsliceService
      * @return array|bool|JsonResponse
      */
     public function createScore(
-        $target,
+        $assetUrl,
         $name,
         $folderId = '',
         $artist = '',
@@ -127,10 +87,8 @@ class SoundsliceService
         $urlResponse = $this->request('https://www.soundslice.com/api/v1/scores/' . $body->slug . '/notation/','POST');
         if(json_decode((string) $urlResponse->getStatusCode()) !== 201){return false;}
 
-        $tmp_handle = fopen('php://temp', 'r+'); // stackoverflow.com/q/9287368
-        fwrite($tmp_handle, $this->filesystem->read($target));
-        rewind($tmp_handle);
-        $fileContents = stream_get_contents($tmp_handle);
+        $tmp_handle = fopen('php://temp', 'r+'); fwrite($tmp_handle, $assetUrl); rewind($tmp_handle);
+        $fileContents = stream_get_contents($tmp_handle); // stackoverflow.com/q/9287368
 
         $notationResponse = $this->request('','PUT',['body' => $fileContents],false,
             ((array) json_decode((string) $urlResponse->getBody()))['url']
