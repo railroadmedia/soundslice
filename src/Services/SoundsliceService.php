@@ -4,6 +4,7 @@ namespace Railroad\Soundslice\Services;
 
 use GuzzleHttp;
 use Illuminate\Http\JsonResponse;
+use PHPUnit\Util\Json;
 
 class SoundsliceService
 {
@@ -37,10 +38,7 @@ class SoundsliceService
         return $client->request($method, $uri, $options);
     }
 
-    // -----------------------------------------------------------------------------------------------------------------
-
     /**
-     * @param string $assetUrl
      * @param string $name
      * @param int|string $folderId
      * @param string $artist
@@ -51,7 +49,6 @@ class SoundsliceService
      * @return array|bool|JsonResponse
      */
     public function createScore(
-        $assetUrl,
         $name,
         $folderId = '',
         $artist = '',
@@ -61,14 +58,21 @@ class SoundsliceService
         $printingAllowed = false
     )
     {
-        $response = $this->request('api/v1/scores/', 'POST', ['form_params' => [
-            'name' => $name,
-            'artist' => $artist,
-            'status' => $published ? 3 : 1,
-            'embed_status' => $embedWhiteListOnly ? 4 : ($embedGlobally ? 2 : 1),
-            'print_status' => $printingAllowed ? 3 : 1,
-            'folder_id' => $folderId
-        ]]); // https://www.soundslice.com/help/data-api/#createscore
+        $response = $this->request( // https://www.soundslice.com/help/data-api/#createscore
+            'api/v1/scores/',
+            'POST',
+            [
+                'form_params' => [
+                    'name' => $name,
+                    'artist' => $artist,
+                    'status' => $published ? 3 : 1,
+                    'embed_status' => $embedWhiteListOnly ? 4 : ($embedGlobally ? 2 : 1),
+                    'print_status' => $printingAllowed ? 3 : 1,
+                    'folder_id' => $folderId
+                ]
+            ]
+        );
+
         $body = json_decode((string) $response->getBody());
         $code = json_decode((string) $response->getStatusCode());
         // $reason = json_decode((string) $response->getReasonPhrase());
@@ -79,99 +83,142 @@ class SoundsliceService
                 error_log('status ' . $code . ' not expected.');
             }
             error_log('Failed with error:"' . print_r($body->errors ?? '', true) . '"');
-            return new JsonResponse(['success' => false, 'error' => $body->errors ?? 'Very broken. Check the logs.'];
+            return ['success' => false, 'error' => $body->errors ?? 'Very broken. Check the logs.'];
         }
         if($code !== 201) {
             error_log('succeeded but with unexpected code (' . $code . ')');
         }
-
-        return new JsonResponse(['success' => true, 'slug' => $body->slug]);
-    }
-
-    public function createNotation($slug, $assetUrl)
-    {
-        // step 1: https://www.soundslice.com/help/data-api/#putnotation
-        $urlResponse = $this->request('https://www.soundslice.com/api/v1/scores/' . $slug . '/notation/','POST');
-        if(json_decode((string) $urlResponse->getStatusCode()) !== 201){return false;}
-
-        $tmp_handle = fopen('php://temp', 'r+'); fwrite($tmp_handle, $assetUrl); rewind($tmp_handle);
-        $fileContents = stream_get_contents($tmp_handle); // stackoverflow.com/q/9287368
-
-        $notationResponse = $this->request('','PUT',['body' => $fileContents],false,
-            ((array) json_decode((string) $urlResponse->getBody()))['url']
-        );// step 2: https://www.soundslice.com/help/data-api/#putnotation
-
-        fclose($tmp_handle); // clean up temporary storage handle
-
-        if(!$notationResponse->getStatusCode() === 200){
-            return false;
+        if(empty($body->slug){
+            return ['success' => false, 'error' => 'Succeeded but no value returned for slug'];
         }
 
-        // todo: return what?
-    }
-
-    public function list()
-    {
-        $response = $this->request('api/v1/scores/');
-
-        $body = (array) json_decode((string) $response->getBody());
-
-        return $body;
-    }
-
-    public function createFolder($name)
-    {
-        $response = $this->request('api/v1/folders/', 'POST', ['form_params' => ['name' => $name]]);
-        $body = (array) json_decode((string) $response->getBody());
-        return $body['id'] ?? false;
-    }
-
-    public function deleteFolder($id)
-    {
-        $uri = 'api/v1/folders/' . (string) $id;
-        $response = $this->request($uri, 'DELETE');
-
-        //$body = (array) json_decode((string) $response->getBody());
-        $status = json_decode((string) $response->getStatusCode());
-
-        $success = ($status == 201 || $status == 200) ?? false;
-
-        return $success;
-    }
-
-    public function get($slug)
-    {
-        $response = $this->request('api/v1/scores/' . $slug);
-
-        if(is_null($response)){
-            return false;
-        }
-
-        $body = (array) json_decode((string) $response->getBody());
-        $status = json_decode((string) $response->getStatusCode());
-
-        if($status !== 201 && $status !== 200){ // Soundslice's docs says expect 201, but we're getting 200. No idea why.
-            return false;
-        }
-
-        return $body;
+        return ['success' => true, 'slug' => $body->slug];
     }
 
     /**
      * @param $slug
-     * @return bool
-     *
-     * https://www.soundslice.com/help/data-api/#deletescore
+     * @param $assetUrl
+     * @return array
      */
-    public function delete($slug)
+    public function createNotation($slug, $assetUrl)
     {
-        $uri = 'api/v1/scores/' . $slug;
-        $response = $this->request($uri, 'delete');
+        // get asset file data
 
-        // $body = (array) json_decode((string) $response->getBody());
-        $status = json_decode((string) $response->getStatusCode());
+        $tmp_handle = fopen('php://temp', 'r+');
+        fwrite($tmp_handle, $assetUrl);
+        rewind($tmp_handle);
+        $fileContents = stream_get_contents($tmp_handle); // stackoverflow.com/q/9287368
 
-        return $status == 201;
+        // Soundslice-Notation-Upload Step 1: https://www.soundslice.com/help/data-api/#putnotation
+
+        $urlResponse = $this->request('https://www.soundslice.com/api/v1/scores/' . $slug . '/notation/','POST');
+        $providedUploadUrl = ((array) json_decode((string) $urlResponse->getBody()))['url'];
+
+        if(json_decode((string) $urlResponse->getStatusCode()) !== 201){
+            return [
+                'success' => false,
+                'error' => 'Soundslice API Response didn\'t match expected 201 status'
+            ];
+        }
+
+        // Soundslice-Notation-Upload Step 2: https://www.soundslice.com/help/data-api/#putnotation
+
+        $notationResponse = $this->request(
+            '',
+            'PUT',
+            ['body' => $fileContents],
+            false,
+            $providedUploadUrl
+        );
+
+        // We're done; close everything up
+
+        fclose($tmp_handle); // clean up temporary storage handle
+
+        if($notationResponse->getStatusCode() !== 200){
+            return [
+                'success' => false,
+                'error' => 'Soundslice API Response for notation POST didn\'t match expected 200 status'
+            ];
+        }
+
+        return ['success' => true];
     }
+
+//    public function list()
+//    {
+//        $response = $this->request('api/v1/scores/');
+//
+//        $body = (array) json_decode((string) $response->getBody());
+//
+//        return $body;
+//    }
+
+
+// todo: make this
+
+//    public function createFolder($name)
+//    {
+//        $response = $this->request('api/v1/folders/', 'POST', ['form_params' => ['name' => $name]]);
+//        $body = (array) json_decode((string) $response->getBody());
+//        return $body['id'] ?? false;
+//    }
+
+
+// todo: make this
+
+//    public function deleteFolder($id)
+//    {
+//        $uri = 'api/v1/folders/' . (string) $id;
+//        $response = $this->request($uri, 'DELETE');
+//
+//        //$body = (array) json_decode((string) $response->getBody());
+//        $status = json_decode((string) $response->getStatusCode());
+//
+//        $success = ($status == 201 || $status == 200) ?? false;
+//
+//        return $success;
+//    }
+
+
+// todo: make this
+
+//    public function get($slug)
+//    {
+//        $response = $this->request('api/v1/scores/' . $slug);
+//
+//        if(is_null($response)){
+//            return false;
+//        }
+//
+//        $body = (array) json_decode((string) $response->getBody());
+//        $status = json_decode((string) $response->getStatusCode());
+//
+//        if($status !== 201 && $status !== 200){ // Soundslice's docs says expect 201, but we're getting 200. No idea why.
+//            return false;
+//        }
+//
+//        return $body;
+//    }
+
+
+// todo: make this
+
+//    /**
+//     * @param $slug
+//     * @return bool
+//     *
+//     * https://www.soundslice.com/help/data-api/#deletescore
+//     */
+//    public function delete($slug)
+//    {
+//        $uri = 'api/v1/scores/' . $slug;
+//        $response = $this->request($uri, 'delete');
+//
+//        // $body = (array) json_decode((string) $response->getBody());
+//        $status = json_decode((string) $response->getStatusCode());
+//
+//        return $status == 201;
+//    }
 }
 
