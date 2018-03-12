@@ -3,6 +3,7 @@
 namespace Railroad\Soundslice\Controllers;
 
 
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use PHPUnit\Util\Json;
@@ -27,6 +28,7 @@ class SoundsliceJsonController
     /**
      * @param Request $request
      * @return JsonResponse
+     * @throws Exception
      */
     public function createScore(Request $request)
     {
