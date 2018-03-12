@@ -36,7 +36,7 @@ class RemoteApiTest extends TestCase
      */
     public function testCreateFolder()
     {
-        $name = 'testing_' . $this->faker->word;
+        $name = 'testing_' . time() . '_' . $this->faker->word;
 
         $client = new Client();
 
@@ -75,7 +75,7 @@ class RemoteApiTest extends TestCase
      */
     public function testDeleteFolder()
     {
-        $name = 'testing_' . $this->faker->word;
+        $name = 'testing_' . time() . '_' . $this->faker->word;
 
         $client = new Client();
 
@@ -116,8 +116,8 @@ class RemoteApiTest extends TestCase
      */
     public function testCreateScore()
     {
-        $name = 'testing_' . $this->faker->word;
-        $artist = 'testing_' . $this->faker->word;
+        $name = 'testing_' . time() . '_' . $this->faker->word;
+        $artist = 'testing_' . time() . '_' . $this->faker->word;
         $status = 1;
         $embedStatus = 4;
         $printStatus = 3;
@@ -188,8 +188,8 @@ class RemoteApiTest extends TestCase
      */
     public function testDeleteScore()
     {
-        $name = 'testing_' . $this->faker->word;
-        $artist = 'testing_' . $this->faker->word;
+        $name = 'testing_' . time() . '_' . $this->faker->word;
+        $artist = 'testing_' . time() . '_' . $this->faker->word;
         $status = 1;
         $embedStatus = 4;
         $printStatus = 3;
@@ -267,8 +267,8 @@ class RemoteApiTest extends TestCase
      */
     public function testGetScore()
     {
-        $name = 'testing_' . $this->faker->word;
-        $artist = 'testing_' . $this->faker->word;
+        $name = 'testing_' . time() . '_' . $this->faker->word;
+        $artist = 'testing_' . time() . '_' . $this->faker->word;
         $status = 1;
         $embedStatus = 4;
         $printStatus = 3;
@@ -334,7 +334,7 @@ class RemoteApiTest extends TestCase
         );
 
         // cleanup
-        $response = $client->request(
+        $client->request(
             'DELETE',
             'https://www.soundslice.com/' . 'api/v1/scores/' . $scoreSlug . '/',
             [
@@ -354,23 +354,24 @@ class RemoteApiTest extends TestCase
     /**
      * Response Formats:
      * [
-     *     "status" => 1
-     *     "print_status" => 3
-     *     "embed_status" => 4
-     *     "recording_count" => 0
-     *     "show_notation" => true
-     *     "can_print" => true
-     *     "embed_url" => "/scores/123abc/embed/"
-     *     "name" => "testing_qui"
-     *     "artist" => "testing_odit"
-     *     "url" => "/scores/123abc/"
-     *     "has_notation" => false
+     *     [
+     *         "status" => 1
+     *         "print_status" => 3
+     *         "embed_status" => 4
+     *         "recording_count" => 0
+     *         "show_notation" => true
+     *         "can_print" => true
+     *         "name" => "testing_qui"
+     *         "artist" => "testing_odit"
+     *         "has_notation" => false
+     *     ],
+     *     ...
      * ]
      */
     public function testListScores()
     {
-        $name = 'testing_' . $this->faker->word;
-        $artist = 'testing_' . $this->faker->word;
+        $name = 'testing_' . time() . '_' . $this->faker->word;
+        $artist = 'testing_' . time() . '_' . $this->faker->word;
         $status = 1;
         $embedStatus = 4;
         $printStatus = 3;
@@ -424,7 +425,7 @@ class RemoteApiTest extends TestCase
         );
 
         // cleanup
-        $response = $client->request(
+        $client->request(
             'DELETE',
             'https://www.soundslice.com/' . 'api/v1/scores/' . $scoreSlug . '/',
             [
@@ -440,4 +441,116 @@ class RemoteApiTest extends TestCase
             ]
         );
     }
+
+    /**
+     * Docs say this returns 201 but we only seem to get 200 response code.
+     *
+     * Response Formats:
+     * [
+     *     [
+     *         "status" => 1
+     *         "print_status" => 3
+     *         "embed_status" => 4
+     *         "recording_count" => 0
+     *         "show_notation" => true
+     *         "can_print" => true
+     *         "name" => "testing_qui"
+     *         "artist" => "testing_odit"
+     *         "has_notation" => false
+     *     ],
+     *     ...
+     * ]
+     */
+    public function testPutNotation()
+    {
+        $name = 'testing_' . time() . '_' . $this->faker->word;
+        $artist = 'testing_' . time() . '_' . $this->faker->word;
+        $status = 1;
+        $embedStatus = 4;
+        $printStatus = 3;
+
+        $client = new Client();
+
+        $response = $client->request(
+            'POST',
+            'https://www.soundslice.com/' . 'api/v1/folders/',
+            [
+                'auth' => $this->auth,
+                'form_params' => [
+                    'name' => $name
+                ],
+            ]
+        );
+
+        $folderId = json_decode($response->getBody(), true)['id'];
+
+        $response = $client->request(
+            'POST',
+            'https://www.soundslice.com/' . 'api/v1/scores/',
+            [
+                'auth' => $this->auth,
+                'form_params' => [
+                    'name' => $name,
+                    'artist' => $artist,
+                    'status' => $status,
+                    'embed_status' => $embedStatus,
+                    'print_status' => $printStatus,
+                    'folder_id' => $folderId,
+                ],
+            ]
+        );
+
+        $scoreSlug = json_decode($response->getBody(), true)['slug'];
+
+        $response = $client->request(
+            'POST',
+            'https://www.soundslice.com/' . 'api/v1/scores/' . $scoreSlug . '/notation/',
+            [
+                'auth' => $this->auth,
+                'form_params' => [
+                    'name' => $name,
+                    'artist' => $artist,
+                    'status' => $status,
+                    'embed_status' => $embedStatus,
+                    'print_status' => $printStatus,
+                    'folder_id' => $folderId,
+                ],
+            ]
+        );
+
+        $body = json_decode($response->getBody(), true);
+
+        $this->assertNotEmpty($body['url']);
+
+        $putUrl = $body['url'];
+        $notationXml = file_get_contents(__DIR__ . '/../resources/soundslice-notation-xml-example.xml');
+
+        $response = $client->request(
+            'PUT',
+            $putUrl,
+            [
+                'body' => $notationXml,
+            ]
+        );
+
+        $this->assertEquals(200, $response->getStatusCode());
+
+        // cleanup
+        $client->request(
+            'DELETE',
+            'https://www.soundslice.com/' . 'api/v1/scores/' . $scoreSlug . '/',
+            [
+                'auth' => $this->auth
+            ]
+        );
+
+        $client->request(
+            'DELETE',
+            'https://www.soundslice.com/' . 'api/v1/folders/' . $folderId . '/',
+            [
+                'auth' => $this->auth
+            ]
+        );
+    }
+
 }
