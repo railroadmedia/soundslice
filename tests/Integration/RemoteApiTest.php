@@ -444,22 +444,7 @@ class RemoteApiTest extends TestCase
 
     /**
      * Docs say this returns 201 but we only seem to get 200 response code.
-     *
-     * Response Formats:
-     * [
-     *     [
-     *         "status" => 1
-     *         "print_status" => 3
-     *         "embed_status" => 4
-     *         "recording_count" => 0
-     *         "show_notation" => true
-     *         "can_print" => true
-     *         "name" => "testing_qui"
-     *         "artist" => "testing_odit"
-     *         "has_notation" => false
-     *     ],
-     *     ...
-     * ]
+     * This doesn't return anything usful.
      */
     public function testPutNotation()
     {
