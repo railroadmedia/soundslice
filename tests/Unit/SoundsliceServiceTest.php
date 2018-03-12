@@ -94,4 +94,29 @@ class SoundsliceServiceTest extends TestCase
 
         $this->assertEquals($expectedSlug, $slug);
     }
+
+    public function testDeleteScore()
+    {
+        $expectedName = $this->faker->word;
+        $expectedArtist = $this->faker->word;
+
+        $mock = new MockHandler(
+            [
+                new Response(
+                    201, [], json_encode(
+                        [
+                            'name' => $expectedName,
+                            'artist' => $expectedArtist,
+                        ]
+                    )
+                )
+            ]
+        );
+
+        $this->soundSliceService = new SoundsliceService(new Client(['handler' => HandlerStack::create($mock)]));
+
+        $name = $this->soundSliceService->deleteScore($this->faker->word);
+
+        $this->assertEquals($expectedName, $name);
+    }
 }

@@ -8,6 +8,7 @@ use Faker\Generator;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\DatabaseManager;
 use Orchestra\Testbench\TestCase as BaseTestCase;
+use Railroad\Soundslice\Providers\SoundsliceServiceProvider;
 
 class TestCase extends BaseTestCase
 {
@@ -89,5 +90,7 @@ class TestCase extends BaseTestCase
                 'prefix' => '',
             ]
         );
+
+        $app->register(SoundsliceServiceProvider::class);
     }
 }

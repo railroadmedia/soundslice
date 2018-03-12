@@ -1,4 +1,6 @@
-<?php namespace MyNamespace\MyPackageName;
+<?php
+
+namespace Railroad\Soundslice\Providers;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 
@@ -17,7 +19,7 @@ class SoundsliceServiceProvider extends ServiceProvider
             __DIR__ . '/../config/soundslice.php' => config_path('soundslice.php'),
         ]);
 
-        $this->loadRoutesFrom(__DIR__ . '/../../routes.php');
+        $this->loadRoutesFrom(__DIR__ . '/../routes.php');
     }
 
     /**

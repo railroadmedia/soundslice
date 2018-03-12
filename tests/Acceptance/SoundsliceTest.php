@@ -2,8 +2,10 @@
 
 namespace Railroad\Soundslice\Tests\Acceptance;
 
-use Orchestra\Testbench\TestCase;
+use Illuminate\Routing\RouteCollection;
+use Illuminate\Routing\Router;
 use Railroad\Soundslice\Services\SoundsliceService;
+use Railroad\Soundslice\Tests\TestCase;
 
 class SoundsliceTest extends TestCase
 {
