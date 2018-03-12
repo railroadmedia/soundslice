@@ -24,7 +24,7 @@ class SoundsliceController
         $name = $request->get('name');
         $folderId = $request->get('folderId');
         $artist = $request->get('artist');
-        $published = $request->get('published');
+        $publiclyListed = $request->get('publiclyListed');
         $embedWhiteListOnly = $request->get('embedWhiteListOnly');
         $embedGlobally = $request->get('embedGlobally');
         $printingAllowed = $request->get('printingAllowed');
@@ -33,7 +33,7 @@ class SoundsliceController
             $name,
             $folderId,
             $artist,
-            $published,
+            $publiclyListed,
             $embedWhiteListOnly,
             $embedGlobally,
             $printingAllowed

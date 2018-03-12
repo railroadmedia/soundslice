@@ -45,7 +45,7 @@ class SoundsliceService
      * @param string $name
      * @param int|string $folderId
      * @param string $artist
-     * @param bool $published
+     * @param bool $publiclyListed
      * @param bool $embedGlobally
      * @param bool $embedWhiteListOnly
      * @param bool $printingAllowed
@@ -55,7 +55,7 @@ class SoundsliceService
         $name,
         $artist = '',
         $folderId = '',
-        $published = false,
+        $publiclyListed = false,
         $embedWhiteListOnly = false,
         $embedGlobally = false,
         $printingAllowed = false
@@ -68,7 +68,7 @@ class SoundsliceService
                 'form_params' => [
                     'name' => $name,
                     'artist' => $artist,
-                    'status' => $published ? 3 : 1,
+                    'status' => $publiclyListed ? 3 : 1,
                     'embed_status' => $embedWhiteListOnly ? 4 : ($embedGlobally ? 2 : 1),
                     'print_status' => $printingAllowed ? 3 : 1,
                     'folder_id' => $folderId
@@ -148,80 +148,68 @@ class SoundsliceService
         return ['success' => true];
     }
 
-//    public function list()
-//    {
-//        $response = $this->request('api/v1/scores/');
-//
-//        $body = (array) json_decode((string) $response->getBody());
-//
-//        return $body;
-//    }
+    public function list()
+    {
+        $response = $this->request('api/v1/scores/');
 
+        $body = (array) json_decode((string) $response->getBody());
 
-// todo: make this
+        return $body;
+    }
 
-//    public function createFolder($name)
-//    {
-//        $response = $this->request('api/v1/folders/', 'POST', ['form_params' => ['name' => $name]]);
-//        $body = (array) json_decode((string) $response->getBody());
-//        return $body['id'] ?? false;
-//    }
+    public function createFolder($name)
+    {
+        $response = $this->request('api/v1/folders/', 'POST', ['form_params' => ['name' => $name]]);
+        $body = (array) json_decode((string) $response->getBody());
+        return $body['id'] ?? false;
+    }
 
+    public function deleteFolder($id)
+    {
+        $uri = 'api/v1/folders/' . (string) $id;
+        $response = $this->request($uri, 'DELETE');
 
-// todo: make this
+        //$body = (array) json_decode((string) $response->getBody());
+        $status = json_decode((string) $response->getStatusCode());
 
-//    public function deleteFolder($id)
-//    {
-//        $uri = 'api/v1/folders/' . (string) $id;
-//        $response = $this->request($uri, 'DELETE');
-//
-//        //$body = (array) json_decode((string) $response->getBody());
-//        $status = json_decode((string) $response->getStatusCode());
-//
-//        $success = ($status == 201 || $status == 200) ?? false;
-//
-//        return $success;
-//    }
+        $success = ($status == 201 || $status == 200) ?? false;
 
+        return $success;
+    }
 
-// todo: make this
+    public function get($slug)
+    {
+        $response = $this->request('api/v1/scores/' . $slug);
 
-//    public function get($slug)
-//    {
-//        $response = $this->request('api/v1/scores/' . $slug);
-//
-//        if(is_null($response)){
-//            return false;
-//        }
-//
-//        $body = (array) json_decode((string) $response->getBody());
-//        $status = json_decode((string) $response->getStatusCode());
-//
-//        if($status !== 201 && $status !== 200){ // Soundslice's docs says expect 201, but we're getting 200. No idea why.
-//            return false;
-//        }
-//
-//        return $body;
-//    }
+        if(is_null($response)){
+            return false;
+        }
 
+        $body = (array) json_decode((string) $response->getBody());
+        $status = json_decode((string) $response->getStatusCode());
 
-// todo: make this
+        if($status !== 201 && $status !== 200){ // Soundslice's docs says expect 201, but we're getting 200. No idea why.
+            return false;
+        }
 
-//    /**
-//     * @param $slug
-//     * @return bool
-//     *
-//     * https://www.soundslice.com/help/data-api/#deletescore
-//     */
-//    public function delete($slug)
-//    {
-//        $uri = 'api/v1/scores/' . $slug;
-//        $response = $this->request($uri, 'delete');
-//
-//        // $body = (array) json_decode((string) $response->getBody());
-//        $status = json_decode((string) $response->getStatusCode());
-//
-//        return $status == 201;
-//    }
+        return $body;
+    }
+
+    /**
+     * @param $slug
+     * @return bool
+     *
+     * https://www.soundslice.com/help/data-api/#deletescore
+     */
+    public function delete($slug)
+    {
+        $uri = 'api/v1/scores/' . $slug;
+        $response = $this->request($uri, 'delete');
+
+        // $body = (array) json_decode((string) $response->getBody());
+        $status = json_decode((string) $response->getStatusCode());
+
+        return $status == 201;
+    }
 }
 
