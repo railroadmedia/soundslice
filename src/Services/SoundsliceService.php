@@ -25,11 +25,12 @@ class SoundsliceService
 
         if(!empty($entireUrl)){
             $uri = $entireUrl;
-        }else{
-            if(substr($uri, -1) !== '/'){ // ensure has trailing slash
-                $uri = $uri . '/';
-            }
         }
+
+        if(substr($uri, -1) !== '/'){ // ensure has trailing slash
+            $uri = $uri . '/';
+        }
+        
         if($withAuth){ // At least one method needs to *not* pass authentication.
             $options['auth'] = [env('SOUNDSLICE_APP_ID'), env('SOUNDSLICE_SECRET')];
         }
