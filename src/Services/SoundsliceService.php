@@ -2,9 +2,8 @@
 
 namespace Railroad\Soundslice\Services;
 
-use GuzzleHttp;
+use GuzzleHttp\Client;
 use Illuminate\Http\JsonResponse;
-use PHPUnit\Util\Json;
 
 class SoundsliceService
 {
@@ -13,11 +12,16 @@ class SoundsliceService
     const KEY_FOR_HASH = 'soundslice-upload-hash';
 
     /**
-     * SoundsliceService constructor.
+     * @var Client
      */
-    public function __construct()
-    {
+    private $client;
 
+    /**
+     * @param Client $client
+     */
+    public function __construct(Client $client)
+    {
+        $this->client = $client;
     }
 
     private function request($uri, $method = 'GET', $options = [], $withAuth = true, $entireUrl = '')
@@ -34,8 +38,7 @@ class SoundsliceService
             $options['auth'] = [env('SOUNDSLICE_APP_ID'), env('SOUNDSLICE_SECRET')];
         }
 
-        $client = new GuzzleHttp\Client();
-        return $client->request($method, $uri, $options);
+        return $this->client->request($method, $uri, $options);
     }
 
     /**
@@ -50,8 +53,8 @@ class SoundsliceService
      */
     public function createScore(
         $name,
-        $folderId = '',
         $artist = '',
+        $folderId = '',
         $published = false,
         $embedWhiteListOnly = false,
         $embedGlobally = false,
