@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="7ae6a15d-fd1b-435a-9c10-e14264d8560e" name="dev.soundslice.com" url="http://127.0.0.1">
+        <fileTransfer host="127.0.0.1" port="222" rootFolder="/app/soundslice" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="222" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>

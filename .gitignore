@@ -1,3 +1,7 @@
-.idea
+.idea/*
 vendor/
 .env.testing
+!.idea/php.xml
+!.idea/webServers.xml
+!.idea/deployment.xml
+!.idea/php-test-framework.xml
