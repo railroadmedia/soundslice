@@ -7,7 +7,7 @@ Route::prefix('soundslice')->group(function () {
 
     Route::put(
         'create',
-        SoundsliceJsonController::class . '@create'
+        SoundsliceJsonController::class . '@createScore'
     )->name('soundslice.create');
 
     Route::get(
