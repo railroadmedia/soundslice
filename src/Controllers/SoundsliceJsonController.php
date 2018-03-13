@@ -32,25 +32,34 @@ class SoundsliceJsonController
      */
     public function createScore(Request $request)
     {
-        $name = $request->get('name');
-        $folderId = $request->get('folderId');
-        $artist = $request->get('artist');
-        $publiclyListed = $request->get('publiclyListed');
-        $embedWhiteListOnly = $request->get('embedWhiteListOnly');
-        $embedGlobally = $request->get('embedGlobally');
-        $printingAllowed = $request->get('printingAllowed');
+        try{
+            $slug = $this->soundsliceService->createScore(
+                $request->get('name'),
+                $request->get('folderId'),
+                $request->get('artist'),
+                $request->get('publiclyListed'),
+                $request->get('embedWhiteListOnly'),
+                $request->get('embedGlobally'),
+                $request->get('printingAllowed')
+            );
+        }catch(Exception $e){
+            return new JsonResponse(
+                ['errors' => [
+                    [
+                        'status' => 'error',
+                        'code' => 500,
+                        'title' => 'SoundSliceJsonController@createScore failed',
+                        'detail' =>
+                            'Param ("name"*): "' . $request->get('name') . '", error message: "' .
+                            $e->getMessage() . '" (* not necessarily the only param).'
+                    ]
+                ]],
+                500
+            );
 
-        $response = $this->soundsliceService->createScore(
-            $name,
-            $folderId,
-            $artist,
-            $publiclyListed,
-            $embedWhiteListOnly,
-            $embedGlobally,
-            $printingAllowed
-        );
+        }
 
-        return new JsonResponse($response);
+        return new JsonResponse($slug, 201);
     }
 
     /**
@@ -58,7 +67,7 @@ class SoundsliceJsonController
      */
     public function list()
     {
-        $response = $this->soundsliceService->list();
+        $response = $this->soundsliceService->listScores();
 
         return new JsonResponse($response);
     }
@@ -68,9 +77,24 @@ class SoundsliceJsonController
      * @return JsonResponse
      */
     public function get($slug){
-        $response = $this->soundsliceService->get($slug);
 
-        return new JsonResponse($response);
+        try{
+            $body = $this->soundsliceService->getScore($slug);
+        }catch(Exception $e){
+            return new JsonResponse(
+                ['errors' => [
+                    [
+                        'status' => 'error',
+                        'code' => 500,
+                        'title' => 'SoundSliceJsonController@get failed',
+                        'detail' => 'Slug: "' . $slug . '", error message: "' . $e->getMessage() . '".'
+                    ]
+                ]],
+                500
+            );
+        }
+
+        return new JsonResponse($body);
     }
 
     /**
@@ -80,9 +104,24 @@ class SoundsliceJsonController
     public function delete(Request $request){
         $slug = $request->get('slug');
 
-        $response = $this->soundsliceService->delete($slug);
+        try{
+            $delete = $this->soundsliceService->deleteScore($slug);
+        }catch(Exception $e){
+            return new JsonResponse(
+                ['errors' => [
+                    [
+                        'status' => 'error',
+                        'code' => 500,
+                        'title' => 'SoundSliceJsonController@delete failed',
+                        'detail' => 'Param("slug): "' . $slug . '", error message: "' . $e->getMessage() . '".'
+                    ]
+                ]],
+                500
+            );
 
-        return new JsonResponse($response);
+        }
+
+        return new JsonResponse($delete);
     }
 
     /**
@@ -92,9 +131,23 @@ class SoundsliceJsonController
     public function createFolder(Request $request){
         $name = $request->get('name');
 
-        $response = $this->soundsliceService->createFolder($name);
+        try{
+            $folderId = $this->soundsliceService->createFolder($name);
+        }catch(Exception $e){
+            return new JsonResponse(
+                ['errors' => [
+                    [
+                        'status' => 'error',
+                        'code' => 500,
+                        'title' => 'SoundSliceJsonController@createFolder failed',
+                        'detail' => 'Param("name"): "' . $name . '", error message: "' . $e->getMessage() . '".'
+                    ]
+                ]],
+                500
+            );
+        }
 
-        return new JsonResponse($response);
+        return new JsonResponse($folderId, 201);
     }
 
     /**
@@ -104,9 +157,23 @@ class SoundsliceJsonController
     public function deleteFolder(Request $request){
         $id = $request->get('id');
 
-        $response = $this->soundsliceService->deleteFolder($id);
+        try{
+            $delete = $this->soundsliceService->deleteFolder($id);
+        }catch(Exception $e){
+            return new JsonResponse(
+                ['errors' => [
+                    [
+                        'status' => 'error',
+                        'code' => 500,
+                        'title' => 'SoundSliceJsonController@deleteFolder failed',
+                        'detail' => 'Param ("id"): "' . $id . '", error message: "' . $e->getMessage() . '".'
+                    ]
+                ]],
+                500
+            );
+        }
 
-        return new JsonResponse($response);
+        return new JsonResponse($delete);
     }
 
     /**
@@ -118,8 +185,24 @@ class SoundsliceJsonController
         $slug = $request->get('slug');
         $assetUrl = $request->get('assetUrl');
 
-        $response = $this->soundsliceService->addNotation($slug, $assetUrl);
+        try{
+            $response = $this->soundsliceService->addNotation($slug, $assetUrl);
+        }catch(Exception $e){
+            return new JsonResponse(
+                ['errors' => [
+                    [
+                        'status' => 'error',
+                        'code' => 500,
+                        'title' => 'SoundSliceJsonController@createNotation failed',
+                        'detail' => 'Param 1 ("slug"): "' .  $slug .
+                            '", Param 2 ("assetUrl"): "' . $assetUrl .
+                            '", error message: "' . $e->getMessage() . '".'
+                    ]
+                ]],
+                500
+            );
+        }
 
-        return new JsonResponse($response);
+        return new JsonResponse($response, 201);
     }
 }
