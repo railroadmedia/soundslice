@@ -1,16 +1,21 @@
 
-
-Notes
-========================================================================================================================
-
-Endpoints and service for connecting your application to Soundslice via their API.
+**Endpoints and service for connecting your application to Soundslice via their API.**
 
 Soundslice API docs: https://www.soundslice.com/help/data-api/
+
+
+Installation
+========================================================================================================================
+
+[Available via Packagist](https://packagist.org/packages/railroad/soundslice).
 
 Provide the following environmental variables:
 
 * `SOUNDSLICE_APP_ID`
 * `SOUNDSLICE_SECRET`
+
+See Lastpass Secure Note "**Musora - Local .env**" <span style="color:grey;font-size:0.8em">(in "Shared Railroad Web 
+Development" -> "Local Dev" -> )</span>
 
 For acceptance tests, copy *.env.testing.example* and rename it "*.env.testing*", and provide the respective
 environmental variables there. It's already added to *.gitignore*.
@@ -123,7 +128,7 @@ Methods
 | slug                  | string    | yes       |
 | asset-url             | string    | yes       |
     
-`assetUrl` should be a publicly-accessible URL that provides the relevant media file (ex: *musicxml* file)
+`asset-url` should be a publicly-accessible URL that provides the relevant media file (ex: *musicxml* file)
 
 
 Appendix 1 - create score parameter notes
@@ -174,12 +179,3 @@ $embedWhiteListOnly ? 4 : ($embedGlobally ? 2 : 1)
 ```
 
 Just an FYI lest you look at soundslice's API docs when attempting to use this method **of this *integration* package**.
-
-
-
-------------------------------------------------------------------------------------------------------------------------
-
-
-
-
-
