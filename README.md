@@ -19,8 +19,25 @@ environmental variables there. It's already added to *.gitignore*.
 API Reference
 ========================================================================================================================
 
-Table of Contents
+Notes
 ------------------------------------------------------------------------------------------------------------------------
+
+### endpoints
+
+Prepend all endpoints below with `/soundslice/`. 
+
+Anything in curly braces is an inline parameter.
+
+For example if below it says `get/{slug}`, then your endpoint for the 
+slug `foo` would actually be `/soundslice/get/foo`.
+
+
+### Defaults
+
+All optional booleans default to `false` unless noted otherwise.
+
+
+## List of methods available
 
 * createScore
 * list
@@ -35,33 +52,36 @@ Table of Contents
 Methods
 ------------------------------------------------------------------------------------------------------------------------
 
-### createScore
+### create score
 
-PUT 'create'
+**PUT** `create`
 
-| param                 | data-type | required  |
-|-----------------------|-----------|-----------|
-| name                  | string    | yes       |
-| folderId              | string    |           |
-| artist                | string    |           |
-| publiclyListed        | boolean   |           |
-| embedWhiteListOnly    | boolean   |           |
-| embedGlobally         | boolean   |           |
-| printingAllowed       | boolean   |           |
+| param                     | data-type | required  |
+|---------------------------|-----------|-----------|
+| name                      | string    | yes       |
+| folder-id                 | string    |           |
+| artist                    | string    |           |
+| publicly-listed\*         | boolean   |           |
+| embed-white-list-only\*   | boolean   |           |
+| embed-globally\*          | boolean   |           |
+| printing-allowed          | boolean   |           |
+
+\* For notes about these params see the "Appendix 1 - create score parameter notes" section below 
+
 
 ### list
 
-GET 'list' 
+**GET** `list`
 
 
 ### get
 
-GET 'get/{slug}'
+**GET** `get/{slug}`
 
 
 ### delete
 
-DELETE 'delete'
+**DELETE** `delete`
     
 | param                 | data-type | required  |
 |-----------------------|-----------|-----------|
@@ -69,7 +89,7 @@ DELETE 'delete'
 
 ### move
 
-POST 'move'
+**POST** `move`
 
 | param                 | data-type | required  |
 |-----------------------|-----------|-----------|
@@ -78,17 +98,16 @@ POST 'move'
 
 ### folder create
 
-PUT 'folder/create'
-    name
+**PUT** `folder/create`
     
 | param                 | data-type | required  |
 |-----------------------|-----------|-----------|
-| slug                  | string    | yes       |
+| name                  | string    | yes       |
 
 
 ### folder delete
 
-DELETE 'folder/delete'
+**DELETE** `folder/delete`
 
 | param                 | data-type | required  |
 |-----------------------|-----------|-----------|
@@ -97,14 +116,64 @@ DELETE 'folder/delete'
 
 ### create notation
 
-PUT 'notation'
+**PUT** `notation`
     
 | param                 | data-type | required  |
 |-----------------------|-----------|-----------|
 | slug                  | string    | yes       |
-| assetUrl              | string    | yes       |
+| asset-url             | string    | yes       |
     
 `assetUrl` should be a publicly-accessible URL that provides the relevant media file (ex: *musicxml* file)
+
+
+Appendix 1 - create score parameter notes
+------------------------------------------------------------------------------------------------------------------------
+
+#### publicly-listed
+
+Specifies who can view the score on soundslice.com. (Embeds ignore this and use embed_status.)
+
+`false` - “Only me”
+
+`true` - “Anybody who knows its URL”
+
+
+#### embed-white-list-only
+
+RE embed options. For more, see [Soundslice's embedding docs](https://www.soundslice.com/help/management/#embedding).
+
+`false` - Not restricted only to whitelist domains - defers to `embed-globally` option 
+
+`true` - Allowed only on whitelist domains
+
+
+#### embed-globally
+
+`false` - Disabled (default value, if not provided)
+
+`true` - Allowed on any domain
+
+
+#### A note about the *embed-white-list-only* and *embed-globally*
+
+These are options of this *soundslice-integrating **package*** that abstract options of the actual Soundslice API.
+
+Thus, if you look directly at the should slice API you'll see this instead:
+
+    embed_status	Optional	
+    An integer specifying embed options. For more, see embedding docs.
+    
+    1 — Disabled (default value, if not provided)
+    2 — Allowed on any domain
+    4 — Allowed on whitelist domains        
+
+This package determines which integer to specify for the that option the following way:
+
+```php
+$embedWhiteListOnly ? 4 : ($embedGlobally ? 2 : 1)
+```
+
+Just an FYI lest you look at soundslice's API docs when attempting to use this method **of this *integration* package**.
 
 
 
