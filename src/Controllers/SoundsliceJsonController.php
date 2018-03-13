@@ -35,12 +35,12 @@ class SoundsliceJsonController
         try{
             $slug = $this->soundsliceService->createScore(
                 $request->get('name'),
-                $request->get('folderId'),
+                $request->get('folder-id'),
                 $request->get('artist'),
-                $request->get('publiclyListed'),
-                $request->get('embedWhiteListOnly'),
-                $request->get('embedGlobally'),
-                $request->get('printingAllowed')
+                $request->get('publicly-listed'),
+                $request->get('embed-white-list-only'),
+                $request->get('embed-globally'),
+                $request->get('printing-allowed')
             );
         }catch(Exception $e){
             return new JsonResponse(
@@ -183,7 +183,7 @@ class SoundsliceJsonController
     public function createNotation(Request $request)
     {
         $slug = $request->get('slug');
-        $assetUrl = $request->get('assetUrl');
+        $assetUrl = $request->get('asset-url');
 
         try{
             $response = $this->soundsliceService->addNotation($slug, $assetUrl);
