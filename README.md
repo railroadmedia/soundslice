@@ -54,7 +54,7 @@ Methods
 
 ### create score
 
-**PUT** `create`
+**PUT** "create"
 
 | param                     | data-type | required  |
 |---------------------------|-----------|-----------|
@@ -69,27 +69,27 @@ Methods
 \* For notes about these params see the "Appendix 1 - create score parameter notes" section below 
 
 
-### list
+### list scores
 
-**GET** `list`
-
-
-### get
-
-**GET** `get/{slug}`
+**GET** "list"
 
 
-### delete
+### get score
 
-**DELETE** `delete`
+**GET** "get/{slug}"
+
+
+### delete score
+
+**DELETE** "delete"
     
 | param                 | data-type | required  |
 |-----------------------|-----------|-----------|
 | slug                  | string    | yes       |
 
-### move
+### move score
 
-**POST** `move`
+**POST** "move"
 
 | param                 | data-type | required  |
 |-----------------------|-----------|-----------|
@@ -98,7 +98,7 @@ Methods
 
 ### folder create
 
-**PUT** `folder/create`
+**PUT** "folder/create"
     
 | param                 | data-type | required  |
 |-----------------------|-----------|-----------|
@@ -107,7 +107,7 @@ Methods
 
 ### folder delete
 
-**DELETE** `folder/delete`
+**DELETE** "folder/delete"
 
 | param                 | data-type | required  |
 |-----------------------|-----------|-----------|
@@ -116,7 +116,7 @@ Methods
 
 ### create notation
 
-**PUT** `notation`
+**PUT** "notation"
     
 | param                 | data-type | required  |
 |-----------------------|-----------|-----------|
