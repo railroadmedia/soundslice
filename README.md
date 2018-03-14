@@ -139,7 +139,8 @@ Methods
 
 \* For notes about these params see the "Create Score Parameter Notes" section below 
 
-**Returns, on success**
+
+#### Returns, on success
 
 * status code `201`
 * status text `Created`
@@ -162,7 +163,7 @@ Methods
 
 **GET** "list"
 
-**Returns, on success**
+#### Returns, on success
 
 * status code `200`
 * status text `OK`
@@ -212,9 +213,8 @@ Example (account in for this example only has two scores):
 
 **GET** "get/{slug}"
 
-**Returns**:
 
-['score' => $body], 200
+#### Returns, on success
 
 * status code `200`
 * status text `OK`
@@ -252,7 +252,8 @@ Example (account in for this example only has two scores):
 |-----------------------|-----------|-----------|
 | slug                  | string    | yes       |
 
-**Returns**:
+
+#### Returns, on success
 
 * status code `200`
 * status text `OK`
@@ -280,6 +281,7 @@ Example (account in for this example only has two scores):
 |-----------------------|-----------|-----------|
 | ~~slug~~                  | string    | yes       |
 
+#### ~~Returns, on success~~
 
 
 
@@ -291,7 +293,8 @@ Example (account in for this example only has two scores):
 |-----------------------|-----------|-----------|
 | name                  | string    | yes       |
 
-**Returns, on success**
+
+#### Returns, on success
 
 * status code `201`
 * status text `Created`
@@ -317,8 +320,8 @@ Example (account in for this example only has two scores):
 |-----------------------|-----------|-----------|
 | id                    | string    | yes       |
     
-    
-**Returns**:
+
+#### Returns, on success
 
 * status code `200`
 * status text `Created`
@@ -337,7 +340,6 @@ Example (account in for this example only has two scores):
 ```
 
 
-
 ### create notation
 
 **PUT** "notation"
@@ -350,7 +352,7 @@ Example (account in for this example only has two scores):
 `asset-url` should be a publicly-accessible URL that provides the relevant media file (ex: *musicxml* file)
 
 
-**Returns, on success**
+#### Returns, on success
 
 * status code `200` (**BECAUSE DOES NOT CREATE**)
 * status text `OK` (**BECAUSE DOES NOT CREATE**)
