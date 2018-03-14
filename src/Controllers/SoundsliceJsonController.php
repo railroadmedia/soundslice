@@ -43,15 +43,17 @@ class SoundsliceJsonController
                 $request->get('printing-allowed')
             );
         }catch(Exception $e){
+
+            error_log('SoundSliceJsonController@createScore failed with the following message from Soundslice: ' .
+                $e->getMessage());
+
             return new JsonResponse(
                 ['errors' => [
                     [
                         'status' => 'error',
                         'code' => 500,
-                        'title' => 'SoundSliceJsonController@createScore failed',
-                        'detail' =>
-                            'Param ("name"*): "' . $request->get('name') . '", error message: "' .
-                            $e->getMessage() . '" (* not necessarily the only param).'
+                        'title' => 'SoundSliceJsonController@createScore failed (detail has message from Soundslice)',
+                        'detail' => $e->getMessage()
                     ]
                 ]],
                 500
@@ -59,7 +61,7 @@ class SoundsliceJsonController
 
         }
 
-        return new JsonResponse($slug, 201);
+        return new JsonResponse(['slug' => $slug], 201);
     }
 
     /**
@@ -67,9 +69,9 @@ class SoundsliceJsonController
      */
     public function list()
     {
-        $response = $this->soundsliceService->listScores();
+        $scores = $this->soundsliceService->listScores();
 
-        return new JsonResponse($response);
+        return new JsonResponse(['scores' => $scores], 200);
     }
 
     /**
@@ -94,7 +96,7 @@ class SoundsliceJsonController
             );
         }
 
-        return new JsonResponse($body);
+        return new JsonResponse(['score' => $body], 200);
     }
 
     /**
@@ -121,7 +123,7 @@ class SoundsliceJsonController
 
         }
 
-        return new JsonResponse($delete);
+        return new JsonResponse(['deleted' => $delete], 200);
     }
 
     /**
@@ -147,7 +149,7 @@ class SoundsliceJsonController
             );
         }
 
-        return new JsonResponse($folderId, 201);
+        return new JsonResponse(['folder-id' => $folderId], 201);
     }
 
     /**
@@ -173,7 +175,7 @@ class SoundsliceJsonController
             );
         }
 
-        return new JsonResponse($delete);
+        return new JsonResponse(['deleted' => $delete], 200);
     }
 
     /**
@@ -203,6 +205,6 @@ class SoundsliceJsonController
             );
         }
 
-        return new JsonResponse($response, 201);
+        return new JsonResponse(['notation' => $response], 201);
     }
 }

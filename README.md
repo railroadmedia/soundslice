@@ -79,6 +79,47 @@ All optional booleans default to `false` unless noted otherwise.
 * create notation
 
 
+## Errors
+
+All errors are available as an item in the Json response's `errors` array (which exists in place of the `data` array). 
+
+Example:
+
+```json
+{
+  "errors":[
+    {
+      "status":"Internal Server Error",
+      "code":500,
+      "title":"SoundSliceJsonController@createScore failed",
+      "detail":"flux capacitor exceeded threshold with gamma output of 28937u4893 hertz."
+    }
+  ]
+}
+```
+
+This is as per my attempts to understand [the json-api docs](http://jsonapi.org/format/#errors).
+
+Each error item will have the fields as per the example below:
+
+**status**:
+
+> the HTTP status code applicable to this problem, expressed as a string value.
+
+**code**:
+
+> an application-specific error code, expressed as a string value.
+
+**title**:
+
+> a short, human-readable summary of the problem that SHOULD NOT change from occurrence to occurrence of the problem, except for purposes of localization.
+
+**detail**:
+
+> a human-readable explanation specific to this occurrence of the problem. Like title, this field’s value can be localized
+
+
+
 Methods
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -89,8 +130,8 @@ Methods
 | param                     | data-type | required  |
 |---------------------------|-----------|-----------|
 | name                      | string    | yes       |
-| folder-id                 | string    |           |
 | artist                    | string    |           |
+| folder-id                 | string    |           |
 | publicly-listed\*         | boolean   |           |
 | embed-white-list-only\*   | boolean   |           |
 | embed-globally\*          | boolean   |           |
@@ -98,15 +139,109 @@ Methods
 
 \* For notes about these params see the "Create Score Parameter Notes" section below 
 
+**Returns, on success**
+
+* status code `201`
+* status text `Created`
+* `slug` string
+
+```json
+{
+    "data":{
+        "statusText":"Created",
+        "statusCode":201,
+        "data":{
+            "slug": "fo1337br"
+        }
+    }
+}
+```
+
 
 ### list scores
 
 **GET** "list"
 
+**Returns, on success**
+
+* status code `200`
+* status text `OK`
+* `scores` array with all the scores for the account.
+
+Example (account in for this example only has two scores):
+
+```json
+{
+    "data":{
+        "statusText":"OK",
+        "statusCode":200,
+        "data":{
+            "scores":[
+                {
+                    "status":1,
+                    "show_notation":true,
+                    "print_status":1,
+                    "can_print":false,
+                    "embed_status":1,
+                    "name":"nameFoo ex",
+                    "artist":"artistFoo pariatur ab",
+                    "slug":"fo154364br",
+                    "recording_count":0,
+                    "has_notation":false
+                },
+                {
+                    "status":1,
+                    "show_notation":true,
+                    "print_status":1,
+                    "can_print":false,
+                    "embed_status":1,
+                    "name":"nameFoo labore natus",
+                    "artist":"artistFoo atque repellendus iusto",
+                    "slug":"fo154363br",
+                    "recording_count":0,
+                    "has_notation":false
+                }
+            ]
+        }
+    }
+}
+```
+
 
 ### get score
 
 **GET** "get/{slug}"
+
+**Returns**:
+
+['score' => $body], 200
+
+* status code `200`
+* status text `OK`
+* `score` array
+
+```json
+{
+    "data":{
+        "statusText":"OK",
+        "statusCode":200,
+        "data":{
+            "score": {
+                "status":1,
+                 "show_notation":true,
+                 "print_status":1,
+                 "can_print":false,
+                 "embed_status":1,
+                 "name":"nameFoo labore natus",
+                 "artist":"artistFoo atque repellendus iusto",
+                 "slug":"154363",
+                 "recording_count":0,
+                 "has_notation":false
+             }
+        }
+    }
+}
+```
 
 
 ### delete score
@@ -117,13 +252,35 @@ Methods
 |-----------------------|-----------|-----------|
 | slug                  | string    | yes       |
 
-### move score
+**Returns**:
 
-**POST** "move"
+* status code `200`
+* status text `OK`
+* `deleted` integer representing a boolean value
+
+```json
+{
+    "data":{
+        "statusText":"OK",
+        "statusCode":200,
+        "data":{
+            "deleted": 1
+        }
+    }
+}
+```
+
+### ~~move score~~
+
+***UNDER CONSTRUCTION***
+
+~~**POST** "move"~~
 
 | param                 | data-type | required  |
 |-----------------------|-----------|-----------|
-| slug                  | string    | yes       |
+| ~~slug~~                  | string    | yes       |
+
+
 
 
 ### folder create
@@ -134,6 +291,23 @@ Methods
 |-----------------------|-----------|-----------|
 | name                  | string    | yes       |
 
+**Returns, on success**
+
+* status code `201`
+* status text `Created`
+* `folder-id` string
+
+```json
+{
+    "data":{
+        "statusText":"Created",
+        "statusCode":201,
+        "data":{
+            "folder-id": "fo1337br"
+        }
+    }
+}
+```
 
 ### folder delete
 
@@ -143,6 +317,26 @@ Methods
 |-----------------------|-----------|-----------|
 | id                    | string    | yes       |
     
+    
+**Returns**:
+
+* status code `200`
+* status text `Created`
+* `delete` integer representing a boolean value
+
+```json
+{
+    "data":{
+        "statusText":"OK",
+        "statusCode":200,
+        "data":{
+            "deleted": 1
+        }
+    }
+}
+```
+
+
 
 ### create notation
 
@@ -154,6 +348,28 @@ Methods
 | asset-url             | string    | yes       |
     
 `asset-url` should be a publicly-accessible URL that provides the relevant media file (ex: *musicxml* file)
+
+
+**Returns, on success**
+
+* status code `200` (**BECAUSE DOES NOT CREATE**)
+* status text `OK` (**BECAUSE DOES NOT CREATE**)
+* `notation` integer representing boolean value. **DOES NOT REPRESENT CREATION OF NOTATION,
+ONLY SUCCESS IN STARTING PROCESS THAT ATTEMPTS CREATION - YOU MUST REQUEST GET TO DETERMINE
+SUCCESS**.
+
+```json
+{
+    "data":{
+        "statusText":"OK",
+        "statusCode":200,
+        "data":{
+            "notation": 1
+        }
+    }
+}
+```
+
 
 
 Create Score Parameter Notes
@@ -207,3 +423,7 @@ $embedWhiteListOnly ? 4 : ($embedGlobally ? 2 : 1)
 ```
 
 Just an FYI lest you look at soundslice's API docs when attempting to use this method **of this *integration* package**.
+
+
+---------------------------------------
+
