@@ -35,8 +35,8 @@ class SoundsliceJsonController
         try{
             $slug = $this->soundsliceService->createScore(
                 $request->get('name'),
-                $request->get('folder-id'),
                 $request->get('artist'),
+                $request->get('folder-id'),
                 $request->get('publicly-listed'),
                 $request->get('embed-white-list-only'),
                 $request->get('embed-globally'),
