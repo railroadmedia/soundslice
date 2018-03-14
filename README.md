@@ -149,7 +149,7 @@ Methods
 ```json
 {
     "statusText":"Created",
-    "statusCode":201,
+    "status":201,
     "data":{
         "slug": "fo1337br"
     }
@@ -172,7 +172,7 @@ Example (account in for this example only has two scores):
 ```json
 {
     "statusText":"OK",
-    "statusCode":200,
+    "status":200,
     "data":{
         "scores":[
             {
@@ -219,7 +219,7 @@ Example (account in for this example only has two scores):
 ```json
 {
     "statusText":"OK",
-    "statusCode":200,
+    "status":200,
     "data":{
         "score": {
             "status":1,
@@ -256,7 +256,7 @@ Example (account in for this example only has two scores):
 ```json
 {
     "statusText":"OK",
-    "statusCode":200,
+    "status":200,
     "data":{
         "deleted": 1
     }
@@ -295,7 +295,7 @@ Example (account in for this example only has two scores):
 ```json
 {
     "statusText":"Created",
-    "statusCode":201,
+    "status":201,
     "data":{
         "folder-id": "fo1337br"
     }
@@ -320,7 +320,7 @@ Example (account in for this example only has two scores):
 ```json
 {
     "statusText":"OK",
-    "statusCode":200,
+    "status":200,
     "data":{
         "deleted": 1
     }
@@ -351,7 +351,7 @@ SUCCESS**.
 ```json
 {
     "statusText":"OK",
-    "statusCode":200,
+    "status":200,
     "data":{
         "notation": 1
     }
@@ -402,7 +402,7 @@ Thus, if you look directly at the Soundslice API you'll see this instead:
     
     1 — Disabled (default value, if not provided)
     2 — Allowed on any domain
-    4 — Allowed on whitelist domains        
+    4 — Allowed on whitelist domains
 
 This package determines which integer to specify for the that (`embed_status`) option the following way:
 
