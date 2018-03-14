@@ -16,7 +16,7 @@ class SoundsliceServiceProvider extends ServiceProvider
         parent::boot();
 
         $this->publishes([
-            __DIR__ . '/../config/soundslice.php' => config_path('soundslice.php'),
+            __DIR__ . '/../../config/soundslice.php' => config_path('soundslice.php'),
         ]);
 
         $this->loadRoutesFrom(__DIR__ . '/../routes.php');

@@ -7,7 +7,31 @@ Soundslice API docs: https://www.soundslice.com/help/data-api/
 Installation
 ========================================================================================================================
 
+Install
+------------------------------------------------------------------------------------------------------------------------
+
 [Available via Packagist](https://packagist.org/packages/railroad/soundslice).
+
+
+Register Service Provider
+------------------------------------------------------------------------------------------------------------------------
+
+Add the *SoundsliceServiceProvider* to your application's list of service-providers ("providers" property, array) in 
+/config/app.php.
+
+
+Publish Config
+------------------------------------------------------------------------------------------------------------------------
+
+Run this command to publish the package's config file(s) to your application's config directory:
+
+```bash
+$ php artisan vendor:publish
+```
+
+
+Provide Soundslice Credentials
+------------------------------------------------------------------------------------------------------------------------
 
 Provide the following environmental variables:
 
@@ -17,8 +41,9 @@ Provide the following environmental variables:
 See Lastpass Secure Note "**Musora - Local .env**" <span style="color:grey;font-size:0.8em">(in "Shared Railroad Web 
 Development" -> "Local Dev" -> )</span>
 
-For acceptance tests, copy *.env.testing.example* and rename it "*.env.testing*", and provide the respective
-environmental variables there. It's already added to *.gitignore*.
+(For acceptance tests, copy *.env.testing.example* and rename it "*.env.testing*", and provide the respective
+environmental variables there. It's already added to *.gitignore*)
+
 
 
 API Reference
