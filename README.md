@@ -148,12 +148,10 @@ Methods
 
 ```json
 {
+    "statusText":"Created",
+    "statusCode":201,
     "data":{
-        "statusText":"Created",
-        "statusCode":201,
-        "data":{
-            "slug": "fo1337br"
-        }
+        "slug": "fo1337br"
     }
 }
 ```
@@ -173,37 +171,35 @@ Example (account in for this example only has two scores):
 
 ```json
 {
+    "statusText":"OK",
+    "statusCode":200,
     "data":{
-        "statusText":"OK",
-        "statusCode":200,
-        "data":{
-            "scores":[
-                {
-                    "status":1,
-                    "show_notation":true,
-                    "print_status":1,
-                    "can_print":false,
-                    "embed_status":1,
-                    "name":"nameFoo ex",
-                    "artist":"artistFoo pariatur ab",
-                    "slug":"fo154364br",
-                    "recording_count":0,
-                    "has_notation":false
-                },
-                {
-                    "status":1,
-                    "show_notation":true,
-                    "print_status":1,
-                    "can_print":false,
-                    "embed_status":1,
-                    "name":"nameFoo labore natus",
-                    "artist":"artistFoo atque repellendus iusto",
-                    "slug":"fo154363br",
-                    "recording_count":0,
-                    "has_notation":false
-                }
-            ]
-        }
+        "scores":[
+            {
+                "status":1,
+                "show_notation":true,
+                "print_status":1,
+                "can_print":false,
+                "embed_status":1,
+                "name":"nameFoo ex",
+                "artist":"artistFoo pariatur ab",
+                "slug":"fo154364br",
+                "recording_count":0,
+                "has_notation":false
+            },
+            {
+                "status":1,
+                "show_notation":true,
+                "print_status":1,
+                "can_print":false,
+                "embed_status":1,
+                "name":"nameFoo labore natus",
+                "artist":"artistFoo atque repellendus iusto",
+                "slug":"fo154363br",
+                "recording_count":0,
+                "has_notation":false
+            }
+        ]
     }
 }
 ```
@@ -222,23 +218,21 @@ Example (account in for this example only has two scores):
 
 ```json
 {
+    "statusText":"OK",
+    "statusCode":200,
     "data":{
-        "statusText":"OK",
-        "statusCode":200,
-        "data":{
-            "score": {
-                "status":1,
-                 "show_notation":true,
-                 "print_status":1,
-                 "can_print":false,
-                 "embed_status":1,
-                 "name":"nameFoo labore natus",
-                 "artist":"artistFoo atque repellendus iusto",
-                 "slug":"154363",
-                 "recording_count":0,
-                 "has_notation":false
-             }
-        }
+        "score": {
+            "status":1,
+             "show_notation":true,
+             "print_status":1,
+             "can_print":false,
+             "embed_status":1,
+             "name":"nameFoo labore natus",
+             "artist":"artistFoo atque repellendus iusto",
+             "slug":"154363",
+             "recording_count":0,
+             "has_notation":false
+         }
     }
 }
 ```
@@ -261,12 +255,10 @@ Example (account in for this example only has two scores):
 
 ```json
 {
+    "statusText":"OK",
+    "statusCode":200,
     "data":{
-        "statusText":"OK",
-        "statusCode":200,
-        "data":{
-            "deleted": 1
-        }
+        "deleted": 1
     }
 }
 ```
@@ -302,12 +294,10 @@ Example (account in for this example only has two scores):
 
 ```json
 {
+    "statusText":"Created",
+    "statusCode":201,
     "data":{
-        "statusText":"Created",
-        "statusCode":201,
-        "data":{
-            "folder-id": "fo1337br"
-        }
+        "folder-id": "fo1337br"
     }
 }
 ```
@@ -329,12 +319,10 @@ Example (account in for this example only has two scores):
 
 ```json
 {
+    "statusText":"OK",
+    "statusCode":200,
     "data":{
-        "statusText":"OK",
-        "statusCode":200,
-        "data":{
-            "deleted": 1
-        }
+        "deleted": 1
     }
 }
 ```
@@ -362,12 +350,10 @@ SUCCESS**.
 
 ```json
 {
+    "statusText":"OK",
+    "statusCode":200,
     "data":{
-        "statusText":"OK",
-        "statusCode":200,
-        "data":{
-            "notation": 1
-        }
+        "notation": 1
     }
 }
 ```
