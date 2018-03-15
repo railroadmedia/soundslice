@@ -4,6 +4,7 @@ namespace Railroad\Soundslice\Tests\Acceptance;
 
 use Illuminate\Routing\RouteCollection;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\File;
 use Railroad\Soundslice\Services\SoundsliceService;
 use Railroad\Soundslice\Tests\TestCase;
 
@@ -44,6 +45,8 @@ class SoundsliceTest extends TestCase
         parent::tearDown();
     }
 
+
+
     private function createDummyFolder(){
         try{
             $this->folderId = $this->soundSliceService->createFolder($this->getNameForADummy('folder'));
@@ -51,8 +54,12 @@ class SoundsliceTest extends TestCase
             $this->fail('"SoundsliceTest::createDummyFolder" failed');
         }
 
+        $this->log_folder_id($this->folderId);
+
         $this->assertTrue(!empty($this->folderId));
     }
+
+
 
     private function deleteDummyScores(){
         $failed = [];
@@ -72,6 +79,8 @@ class SoundsliceTest extends TestCase
         }
     }
 
+
+
     private function deleteDummyFolder(){
         try{
             $success = $this->soundSliceService->deleteFolder($this->folderId);
@@ -84,6 +93,8 @@ class SoundsliceTest extends TestCase
         }
     }
 
+
+
     private function getNameForADummy($specialTerm = ''){
         if(!empty($specialTerm)){
             $specialTerm = $specialTerm . '_';
@@ -91,7 +102,18 @@ class SoundsliceTest extends TestCase
         return 'TEST_ ' . $specialTerm . 'SoundsliceServiceTest_' . time() . '_' . rand(000, 999);
     }
 
+    public function log_folder_id($folderId)
+    {
+        File::append(__DIR__ . '/../../to-delete-folders.txt', $folderId. ',' . PHP_EOL);
+    }
+
+    public function log_score_slug($scoreSlug)
+    {
+        File::append(__DIR__ . '/../../to-delete-scores.txt', $scoreSlug. ',' . PHP_EOL);
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
+
 
 
     public function test_create_score()
@@ -112,11 +134,14 @@ class SoundsliceTest extends TestCase
         $this->assertNotEmpty($response['slug']);
 
         if(isset($response['slug'])){
+            $this->log_score_slug($response['slug']);
             $this->dummyScoresToDeleteOnTearDown[] = $response['slug'];
         }
     }
 
-    public function test_create_score_fails_folder_does_not_exist()
+
+
+    public function test_create_score_fails_folder_id_not_whole_number()
     {
         $name = 'nameFoo ' . $this->faker->words(rand(1,3), true);
         $artist = 'artistFoo ' . $this->faker->words(rand(1,3), true);
@@ -127,18 +152,60 @@ class SoundsliceTest extends TestCase
             'folder-id' => $this->faker->words(rand(6,12), true)
         ]);
 
-
-        $this->markTestIncomplete();
-        $content = $response->getContent();
+        $expected = [
+            'status' => 'error',
+            'code' => 500,
+            'title' => 'SoundSliceJsonController@createScore failed (detail has message from Soundslice)',
+            'detail' => 'Client error: `POST https://www.soundslice.com/api/v1/scores/` resulted in a `422 Unknown ' .
+                'Status Code` response:' . PHP_EOL . '{"errors": {"folder_id": ["Enter a whole number."]}}' . PHP_EOL
+        ];
+        $actual = (array) json_decode($response->getContent())->errors{0};
+        $this->assertEquals($expected, $actual);
     }
+
+
+    public function test_create_score_fails_folder_does_not_exist()
+    {
+        $name = 'nameFoo ' . $this->faker->words(rand(1,3), true);
+        $artist = 'artistFoo ' . $this->faker->words(rand(1,3), true);
+
+        $response = $this->call('PUT', '/soundslice/create', [
+            'name' => $name,
+            'artist' => $artist,
+            'folder-id' => rand(999999999900000, 999999999999999)
+        ]);
+
+        $expected = [
+            'status' => 'error',
+            'code' => 500,
+            'title' => 'SoundSliceJsonController@createScore failed (detail has message from Soundslice)',
+            'detail' => 'Client error: `POST https://www.soundslice.com/api/v1/scores/` resulted in a `422 Unknown ' .
+                'Status Code` response:' . PHP_EOL . '{"errors": {"folder_id": ["This folder ID is invalid."]}}' . PHP_EOL
+        ];
+        $actual = (array) json_decode($response->getContent())->errors{0};
+        $this->assertEquals($expected, $actual);
+    }
+
+
+
+    public function test_create_score_fails_already_exists()
+    {
+        $this->markTestIncomplete();
+    }
+
+
 
     public function test_create_score_validation_fail()
     {
         $this->markTestIncomplete();
     }
 
+
+
     public function test_list()
     {
+        // todo: setup content to expect
+
         $response = $this->call('GET', 'soundslice/list');
 
         $content = json_decode($response->getContent());
@@ -146,62 +213,124 @@ class SoundsliceTest extends TestCase
         $this->assertNotEquals('404', $response->getStatusCode());
     }
 
+
+
     public function test_get_score()
     {
-        $this->markTestIncomplete();
+        $this->createDummyFolder(); // sets $this->folderId
+
+        $name = 'nameFoo ' . $this->faker->words(rand(1,3), true);
+        $artist = 'artistFoo ' . $this->faker->words(rand(1,3), true);
+
+        $responseToCreate = $this->call('PUT', '/soundslice/create', [
+            'name' => $name,
+            'artist' => $artist,
+            'folder-id' => $this->folderId
+        ]);
+
+        $responseToCreate = (array) json_decode($responseToCreate->getContent());
+
+        if(empty($responseToCreate['slug'])){
+            $this->fail('\"$response[\'slug\']\" should not be empty.');
+        }
+
+        $slug = $responseToCreate['slug'];
+
+        $this->log_score_slug($slug);
+        $this->dummyScoresToDeleteOnTearDown[] = $slug;
+
+        $response = $this->call('get', '/soundslice/get/' . $slug);
+
+        $this->assertNotEmpty($response);
     }
+
+
 
     public function test_get_score_not_found()
     {
         $this->markTestIncomplete();
     }
 
+
+
     public function test_delete_score()
     {
         $this->markTestIncomplete();
     }
+
+
 
     public function test_delete_score_not_found()
     {
         $this->markTestIncomplete();
     }
 
+
+
     public function test_delete_score_validation_failure()
     {
         $this->markTestIncomplete();
     }
+
+
 
     public function test_create_folder()
     {
         $this->markTestIncomplete();
     }
 
+
+
     public function test_create_folder_validation_failure()
     {
         $this->markTestIncomplete();
     }
+
+
 
     public function test_delete_folder()
     {
         $this->markTestIncomplete();
     }
 
+
+
     public function test_delete_folder_not_found()
     {
         $this->markTestIncomplete();
     }
+
+
 
     public function test_delete_folder_validation_failure()
     {
         $this->markTestIncomplete();
     }
 
+
+
     public function test_create_notation()
     {
         $this->markTestIncomplete();
     }
 
+
+
     public function test_create_notation_validation_failure()
+    {
+        $this->markTestIncomplete();
+    }
+
+
+
+    public function test_create_notation_upload_more_than_one()
+    {
+        $this->markTestIncomplete();
+    }
+
+
+
+    public function test_create_notation_with_same_values()
     {
         $this->markTestIncomplete();
     }
