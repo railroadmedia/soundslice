@@ -186,18 +186,6 @@ Example (account in for this example only has two scores):
                 "slug":"fo154364br",
                 "recording_count":0,
                 "has_notation":false
-            },
-            {
-                "status":1,
-                "show_notation":true,
-                "print_status":1,
-                "can_print":false,
-                "embed_status":1,
-                "name":"nameFoo labore natus",
-                "artist":"artistFoo atque repellendus iusto",
-                "slug":"fo154363br",
-                "recording_count":0,
-                "has_notation":false
             }
         ]
     }
@@ -223,16 +211,16 @@ Example (account in for this example only has two scores):
     "data":{
         "score": {
             "status":1,
-             "show_notation":true,
-             "print_status":1,
-             "can_print":false,
-             "embed_status":1,
-             "name":"nameFoo labore natus",
-             "artist":"artistFoo atque repellendus iusto",
-             "slug":"154363",
-             "recording_count":0,
-             "has_notation":false
-         }
+            "show_notation":true,
+            "print_status":1,
+            "can_print":false,
+            "embed_status":1,
+            "name":"nameFoo labore natus",
+            "artist":"artistFoo atque repellendus iusto",
+            "url":"/scores/154453/",
+            "recording_count":0,
+            "has_notation":false
+        }
     }
 }
 ```

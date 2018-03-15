@@ -241,6 +241,19 @@ class SoundsliceTest extends TestCase
 
         $response = $this->call('get', '/soundslice/get/' . $slug);
 
+        $score = (array) json_decode($response->getContent())->score;
+
+        $this->assertEquals(1, $score['status']);
+        $this->assertEquals(true, $score['show_notation']);
+        $this->assertEquals(1, $score['print_status']);
+        $this->assertEquals(false, $score['can_print']);
+        $this->assertEquals(1, $score['embed_status']);
+        $this->assertEquals($name, $score['name']);
+        $this->assertEquals($artist, $score['artist']);
+        $this->assertEquals('/scores/' . $slug . '/' , $score['url']);
+        $this->assertEquals(0, $score['recording_count']);
+        $this->assertEquals(false, $score['has_notation']);
+
         $this->assertNotEmpty($response);
     }
 
