@@ -132,9 +132,10 @@ class SoundsliceJsonController
      */
     public function createFolder(Request $request){
         $name = $request->get('name');
+        $parentId = $request->get('parent_id');
 
         try{
-            $folderId = $this->soundsliceService->createFolder($name);
+            $folderId = $this->soundsliceService->createFolder($name, $parentId);
         }catch(Exception $e){
             return new JsonResponse(
                 ['errors' => [

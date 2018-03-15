@@ -10,7 +10,7 @@ use Railroad\Soundslice\Tests\TestCase;
 
 class SoundsliceTest extends TestCase
 {
-    const TEST_FOLDER_ID = 5232;
+    const TEST_FOLDER_ID = 5619;
     const S3_DIR = 'soundslice-dev-1802';
 
     private $folderId;
@@ -30,36 +30,85 @@ class SoundsliceTest extends TestCase
         $this->app['config']->set('soundslice.soundsliceSecret', env('SOUNDSLICE_SECRET'));
 
         $this->soundSliceService = $this->app->make(SoundsliceService::class);
+
+        $this->createDummyFolder();
     }
 
     protected function tearDown()
     {
-        if(!empty($this->dummyScoresToDeleteOnTearDown)){
-            $this->deleteDummyScores();
-        }
-
-        if(isset($this->folderId)){
-            $this->deleteDummyFolder();
-        }
+//        if(!empty($this->dummyScoresToDeleteOnTearDown)){
+//            $this->deleteDummyScores();
+//        }
+//
+//        if(isset($this->folderId)){
+//            $this->deleteDummyFolder();
+//        }
 
         parent::tearDown();
     }
 
-
-
-    private function createDummyFolder(){
+    private function createDummyFolder($parentId = self::TEST_FOLDER_ID){
         try{
-            $this->folderId = $this->soundSliceService->createFolder($this->getNameForADummy('folder'));
+            $this->folderId = $this->soundSliceService->createFolder($this->getNameForADummy('folder'), $parentId);
         }catch(\Exception $ce){
             $this->fail('"SoundsliceTest::createDummyFolder" failed');
         }
 
         $this->log_folder_id($this->folderId);
 
-        $this->assertTrue(!empty($this->folderId));
+        if(empty($this->folderId)){
+            $this->fail('dummy folder appears to have not worked');
+        }
     }
 
+    private function createDummyScore($name = '', $artist = ''){
+        $this->createDummyFolder(); // sets $this->folderId
 
+        $name = empty($name) ? 'nameFoo ' . $this->faker->words(rand(1,3), true): $name;
+        $artist = empty($artist) ? 'artistFoo ' . $this->faker->words(rand(1,3), true): $artist;
+
+        $responseToCreate = $this->call('PUT', '/soundslice/create', [
+            'name' => $name,
+            'artist' => $artist,
+            'folder-id' => $this->folderId
+        ]);
+
+        $responseToCreate = (array) json_decode($responseToCreate->getContent());
+
+        if(empty($responseToCreate['slug'])){
+            $this->fail('\"$response[\'slug\']\" should not be empty.');
+        }
+
+        $slug = $responseToCreate['slug'];
+
+        $this->log_score_slug($slug);
+        $this->dummyScoresToDeleteOnTearDown[] = $slug;
+
+        $response = $this->call('get', '/soundslice/get/' . $slug);
+
+        $score = (array) json_decode($response->getContent())->score;
+
+        $expected = [
+            'status' => 1,
+            'show_notation' => true,
+            'print_status' => 1,
+            'can_print' => false,
+            'embed_status' => 1,
+            'name' => $name,
+            'artist' => $artist,
+            'url' => '/scores/' . $slug . '/',
+            'recording_count' => 0,
+            'has_notation' => false
+        ];
+
+        if($expected !== $score){
+            $this->fail('Dummy score not as expected. Actual: ' . print_r($score, true) . '. End.');
+        };
+
+        $score['slug'] = $slug;
+
+        return $score;
+    }
 
     private function deleteDummyScores(){
         $failed = [];
@@ -79,8 +128,6 @@ class SoundsliceTest extends TestCase
         }
     }
 
-
-
     private function deleteDummyFolder(){
         try{
             $success = $this->soundSliceService->deleteFolder($this->folderId);
@@ -93,8 +140,6 @@ class SoundsliceTest extends TestCase
         }
     }
 
-
-
     private function getNameForADummy($specialTerm = ''){
         if(!empty($specialTerm)){
             $specialTerm = $specialTerm . '_';
@@ -102,18 +147,145 @@ class SoundsliceTest extends TestCase
         return 'TEST_ ' . $specialTerm . 'SoundsliceServiceTest_' . time() . '_' . rand(000, 999);
     }
 
-    public function log_folder_id($folderId)
+    private function log_folder_id($folderId)
     {
         File::append(__DIR__ . '/../../to-delete-folders.txt', $folderId. ',' . PHP_EOL);
     }
 
-    public function log_score_slug($scoreSlug)
+    private function log_score_slug($scoreSlug)
     {
         File::append(__DIR__ . '/../../to-delete-scores.txt', $scoreSlug. ',' . PHP_EOL);
     }
 
+    private function countScoresInAccount(){
+        $scores = $this->soundSliceService->listScores();
+
+        return count($scores);
+    }
+
+    /**
+     * This isn't actually a test - it's just a way of deleting scores created in testing. Otherwise we have to
+     * go into the soundslice "slice manager" web UI and manually delete each one. Fuck that. Just look in
+     * "to-delete-scores.txt" in the root of this project to see a list of slugs representing the scores created
+     * in the process of running these tests. Merry xmas. Jonathan, 2018
+     */
+    public function test_delete_many_scores()
+    {
+        $toDelete = [
+            154497,
+            154498
+        ];
+
+        echo 'Attempting to delete ' . count($toDelete) . ' scores.' . PHP_EOL;
+
+        if(empty($toDelete)){
+            $this->fail('Add items to delete, wingnut.');
+        }
+
+        $beforeCount = $this->countScoresInAccount();
+
+        foreach($toDelete as $slug){
+            try{
+                $this->soundSliceService->deleteScore($slug);
+            }catch(\Exception $e){
+                $probablyAlreadyDeleted[$slug] = $e->getMessage();
+            }
+        }
+
+        if(!empty($probablyAlreadyDeleted)){
+            echo count($probablyAlreadyDeleted) . ' not deleted perhaps because already deleted:' . PHP_EOL;
+            // echo print_r($probablyAlreadyDeleted, true);
+        }
+
+        $afterCount = $this->countScoresInAccount();
+
+        $numberDeleted = $beforeCount - $afterCount;
+
+        echo PHP_EOL . 'Deleted ' . $numberDeleted . ' scores.';
+
+        $itFuckenWorked = true;
+
+        $this->assertTrue($itFuckenWorked);
+    }
+
+    /**
+     * Same as "test_delete_many_scores" method above, but for folders obviously. Folders must be empty before they
+     * can be deleted.
+     */
+    public function test_delete_many_folders()
+    {
+        $toDelete = [
+            111,
+            112,
+            113
+        ];
+
+        echo 'Attempting to delete ' . count($toDelete) . ' folders.' . PHP_EOL;
+
+        if(empty($toDelete)){
+            $this->fail('Add items to delete, wingnut.');
+        }
+
+        $numberDeleted = 0;
+
+        foreach($toDelete as $folderId){
+            try{
+                $this->soundSliceService->deleteFolder($folderId);
+                $numberDeleted++;
+            }catch(\Exception $e){
+                $probablyAlreadyDeleted[$folderId] = $e->getMessage();
+            }
+        }
+
+        if(!empty($probablyAlreadyDeleted)){
+            echo count($probablyAlreadyDeleted) . ' not deleted perhaps because already deleted:' . PHP_EOL;
+            // echo print_r($probablyAlreadyDeleted, true);
+
+            $numberDeleted = $numberDeleted - count($probablyAlreadyDeleted);
+            $numberDeleted = $numberDeleted < 0 ? 0 : $numberDeleted;
+
+            echo count($toDelete) - count($probablyAlreadyDeleted) - $numberDeleted . ' unaccounted for.' . PHP_EOL;
+        }
+
+        echo PHP_EOL . 'Deleted ' . $numberDeleted . ' folders.' . PHP_EOL;
+
+        $itFuckenWorked = true;
+
+        $this->assertTrue($itFuckenWorked);
+    }
+
+    /**
+     * @return string
+     *
+     * Gets a dummy slug and ensures it's not already in use. This is important because there is no test environment
+     * for soundslice - we're using the production "database" for our tests! Thus, if you need to test that delete
+     * doesn't work when passed some random value - first make sure that random value isn't actually a slug for some
+     * score that's actually in use on a site somewhere. Sure, it's not likely, by why risk it? This provides a dummy
+     * slug that you know will not collide with one in use. Merry xmas - Jonathan, 2018
+     */
+    private function dummySlugUniqueNotInProd(){
+        $allScores = $this->soundSliceService->listScores();
+        $allSlugs = [];
+
+        foreach($allScores as $score){
+            $allSlugs[] = $score['slug'];
+        }
+
+        do{
+            $altSlug = (string) rand(00000, 99999);
+        }while(in_array($altSlug, $allSlugs));
+
+        return $altSlug;
+    }
+
+
     // -----------------------------------------------------------------------------------------------------------------
 
+
+//    public function test_dummySlugUniqueNotInProd()
+//    {
+//        $slug = 1234; $altSlug = $this->altSlug($slug); $this->assertNotEquals($slug, $altSlug);
+//    }
 
 
     public function test_create_score()
@@ -138,7 +310,6 @@ class SoundsliceTest extends TestCase
             $this->dummyScoresToDeleteOnTearDown[] = $response['slug'];
         }
     }
-
 
 
     public function test_create_score_fails_folder_id_not_whole_number()
@@ -187,19 +358,16 @@ class SoundsliceTest extends TestCase
     }
 
 
-
     public function test_create_score_fails_already_exists()
     {
         $this->markTestIncomplete();
     }
 
 
-
     public function test_create_score_validation_fail()
     {
         $this->markTestIncomplete();
     }
-
 
 
     public function test_list()
@@ -212,7 +380,6 @@ class SoundsliceTest extends TestCase
 
         $this->assertNotEquals('404', $response->getStatusCode());
     }
-
 
 
     public function test_get_score()
@@ -243,41 +410,73 @@ class SoundsliceTest extends TestCase
 
         $score = (array) json_decode($response->getContent())->score;
 
-        $this->assertEquals(1, $score['status']);
-        $this->assertEquals(true, $score['show_notation']);
-        $this->assertEquals(1, $score['print_status']);
-        $this->assertEquals(false, $score['can_print']);
-        $this->assertEquals(1, $score['embed_status']);
-        $this->assertEquals($name, $score['name']);
-        $this->assertEquals($artist, $score['artist']);
-        $this->assertEquals('/scores/' . $slug . '/' , $score['url']);
-        $this->assertEquals(0, $score['recording_count']);
-        $this->assertEquals(false, $score['has_notation']);
+        $expected = [
+            'status' => 1,
+            'show_notation' => true,
+            'print_status' => 1,
+            'can_print' => false,
+            'embed_status' => 1,
+            'name' => $name,
+            'artist' => $artist,
+            'url' => '/scores/' . $slug . '/',
+            'recording_count' => 0,
+            'has_notation' => false
+        ];
 
-        $this->assertNotEmpty($response);
+        $this->assertEquals($expected, $score);
     }
-
 
 
     public function test_get_score_not_found()
     {
-        $this->markTestIncomplete();
-    }
+        $name = 'nameFoo ' . $this->faker->words(rand(1,3), true);
+        $artist = 'artistFoo ' . $this->faker->words(rand(1,3), true);
 
+        $responseToCreate = $this->call('PUT', '/soundslice/create', [
+            'name' => $name,
+            'artist' => $artist,
+            'folder-id' => $this->folderId
+        ]);
+
+        $responseToCreate = (array) json_decode($responseToCreate->getContent());
+
+        if(empty($responseToCreate['slug'])){
+            $this->fail('\"$response[\'slug\']\" should not be empty.');
+        }
+
+        $slug = $responseToCreate['slug'];
+
+        $this->log_score_slug($slug);
+        $this->dummyScoresToDeleteOnTearDown[] = $slug;
+
+        $altSlug = $this->dummySlugUniqueNotInProd();
+
+        $response = $this->call('get', '/soundslice/get/' . $altSlug);
+
+        $decodedContents = (array) json_decode($response->getContent());
+
+        $this->assertTrue(array_key_exists('errors', $decodedContents));
+        $this->assertFalse(array_key_exists('score', $decodedContents));
+    }
 
 
     public function test_delete_score()
     {
-        $this->markTestIncomplete();
+        $score = $this->createDummyScore();
+        $response = $this->call('delete', '/soundslice/delete/', ['slug' => $score['slug']]);
+        $decodedContentAsArray = (array) json_decode($response->getContent());
+        $this->assertTrue($decodedContentAsArray['deleted']);
     }
-
 
 
     public function test_delete_score_not_found()
     {
-        $this->markTestIncomplete();
+        $response = $this->call('delete', '/soundslice/delete/', ['slug' => $this->dummySlugUniqueNotInProd()]);
+        $decodedContentAsArray = (array) json_decode($response->getContent());
+        $this->assertFalse(isset($decodedContentAsArray['deleted']));
+        $this->assertTrue(array_key_exists('errors', $decodedContentAsArray));
+        $this->assertEquals(500, $response->getStatusCode());
     }
-
 
 
     public function test_delete_score_validation_failure()
@@ -286,12 +485,16 @@ class SoundsliceTest extends TestCase
     }
 
 
-
     public function test_create_folder()
     {
         $this->markTestIncomplete();
     }
 
+
+    public function test_create_nested_folder()
+    {
+        $this->markTestIncomplete();
+    }
 
 
     public function test_create_folder_validation_failure()
@@ -300,12 +503,16 @@ class SoundsliceTest extends TestCase
     }
 
 
+    public function test_create_folder_failure_invalid_parent_id()
+    {
+        $this->markTestIncomplete();
+    }
+
 
     public function test_delete_folder()
     {
         $this->markTestIncomplete();
     }
-
 
 
     public function test_delete_folder_not_found()
@@ -314,12 +521,10 @@ class SoundsliceTest extends TestCase
     }
 
 
-
     public function test_delete_folder_validation_failure()
     {
         $this->markTestIncomplete();
     }
-
 
 
     public function test_create_notation()
@@ -328,19 +533,16 @@ class SoundsliceTest extends TestCase
     }
 
 
-
     public function test_create_notation_validation_failure()
     {
         $this->markTestIncomplete();
     }
 
 
-
     public function test_create_notation_upload_more_than_one()
     {
         $this->markTestIncomplete();
     }
-
 
 
     public function test_create_notation_with_same_values()

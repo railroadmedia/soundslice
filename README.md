@@ -123,6 +123,7 @@ Each error item will have the fields as per the example below:
 Methods
 ------------------------------------------------------------------------------------------------------------------------
 
+
 ### create score
 
 **PUT** "create"
@@ -156,6 +157,8 @@ Methods
 }
 ```
 
+
+------------------------------------------------------------------------------------------------------------------------
 
 ### list scores
 
@@ -193,6 +196,8 @@ Example (account in for this example only has two scores):
 ```
 
 
+------------------------------------------------------------------------------------------------------------------------
+
 ### get score
 
 **GET** "get/{slug}"
@@ -225,6 +230,7 @@ Example (account in for this example only has two scores):
 }
 ```
 
+------------------------------------------------------------------------------------------------------------------------
 
 ### delete score
 
@@ -251,6 +257,9 @@ Example (account in for this example only has two scores):
 }
 ```
 
+
+------------------------------------------------------------------------------------------------------------------------
+
 ### ~~move score~~
 
 ***UNDER CONSTRUCTION***
@@ -265,6 +274,8 @@ Example (account in for this example only has two scores):
 
 
 
+------------------------------------------------------------------------------------------------------------------------
+
 ### folder create
 
 **PUT** "folder/create"
@@ -272,6 +283,7 @@ Example (account in for this example only has two scores):
 | param                 | data-type | required  |
 |-----------------------|-----------|-----------|
 | name                  | string    | yes       |
+| parent-id             | string    |           |
 
 
 #### Returns, on success
@@ -289,6 +301,9 @@ Example (account in for this example only has two scores):
     }
 }
 ```
+
+
+------------------------------------------------------------------------------------------------------------------------
 
 ### folder delete
 
@@ -315,6 +330,8 @@ Example (account in for this example only has two scores):
 }
 ```
 
+
+------------------------------------------------------------------------------------------------------------------------
 
 ### create notation
 
@@ -399,6 +416,37 @@ $embedWhiteListOnly ? 4 : ($embedGlobally ? 2 : 1)
 ```
 
 Just an FYI lest you look at soundslice's API docs when attempting to use this method **of this *integration* package**.
+
+
+---------------------------------------
+
+These are our test-cases
+========================================
+
+(in [soundslice/tests/Acceptance/SoundsliceTest.php](https://github.com/railroadmedia/soundslice/blob/master/tests/Acceptance/SoundsliceTest.php))
+
+1. create_score
+    1. create_score_fails_folder_id_not_whole_number
+    1. create_score_fails_folder_does_not_exist
+    1. create_score_fails_already_exists
+    1. create_score_validation_fail
+1. list
+1. get_score
+    1. get_score_not_found
+1. delete_score
+    1. delete_score_not_found
+    1. delete_score_validation_failure
+1. create_folder
+    1. create_nested_folder
+    1. create_folder_validation_failure
+    1. create_folder_failure_invalid_parent_id
+1. delete_folder
+    1. delete_folder_not_found
+    1. delete_folder_validation_failure
+1. create_notation
+    1. create_notation_validation_failure
+    1. create_notation_upload_more_than_one
+    1. create_notation_with_same_values
 
 
 ---------------------------------------

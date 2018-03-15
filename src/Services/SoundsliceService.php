@@ -140,10 +140,11 @@ class SoundsliceService
 
     /**
      * @param $name
+     * @param $parentId
      * @return bool
      * @throws Exception
      */
-    public function createFolder($name)
+    public function createFolder($name, $parentId = '')
     {
         $response = $this->client->request(
             'POST',
@@ -151,7 +152,8 @@ class SoundsliceService
             [
                 'auth' => $this->auth,
                 'form_params' => [
-                    'name' => $name
+                    'name' => $name,
+                    'parent_id' => $parentId
                 ],
             ]
         );
