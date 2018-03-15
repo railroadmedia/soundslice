@@ -211,7 +211,7 @@ class SoundsliceService
         $body = json_decode($response->getBody(), true);
         $code = $response->getStatusCode();
 
-        if ($code !== 201) {
+        if ($code !== 200) {
             // todo: replace with custom exception class
             throw new Exception($body['error'], $code);
         }
