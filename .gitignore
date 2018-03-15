@@ -5,3 +5,5 @@ vendor/
 !.idea/webServers.xml
 !.idea/deployment.xml
 !.idea/php-test-framework.xml
+to-delete-folders.txt
+to-delete-scores.txt
