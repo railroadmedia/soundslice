@@ -46,7 +46,7 @@ class SoundsliceJsonController
             return new JsonResponse(['errors' => [[
                 'status' => 'Bad Request',
                 'code' => 400,
-                'title' => 'SoundSliceJsonController@createScore validation failed',
+                'title' => 'create score request validation failure',
                 'detail' => $messages
             ] ]], 400);
         }

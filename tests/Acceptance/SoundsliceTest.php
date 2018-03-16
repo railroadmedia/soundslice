@@ -293,7 +293,7 @@ class SoundsliceTest extends TestCase
         $expected = json_encode(['errors' => [[
             'status' => 'Bad Request',
             'code' => 400,
-            'title' => 'SoundSliceJsonController@createScore validation failed',
+            'title' => 'create score request validation failure',
             'detail' => ['folder-id' => [0 => 'The folder-id must be a number.']]
         ]]]);
 
@@ -325,7 +325,7 @@ class SoundsliceTest extends TestCase
         $expected = json_encode(['errors' => [[
             'status' => 'Bad Request',
             'code' => 400,
-            'title' => 'SoundSliceJsonController@createScore validation failed',
+            'title' => 'create score request validation failure',
             'detail' => ['name' => [0 => 'The name may not be greater than 255 characters.']]
         ]]]);
 
@@ -349,7 +349,7 @@ class SoundsliceTest extends TestCase
         $expected = json_encode(['errors' => [[
             'status' => 'Bad Request',
             'code' => 400,
-            'title' => 'SoundSliceJsonController@createScore validation failed',
+            'title' => 'create score request validation failure',
             'detail' => ['artist' => [0 => 'The artist may not be greater than 255 characters.']]
         ]]]);
 
