@@ -5,6 +5,7 @@ namespace Railroad\Soundslice\Tests\Acceptance;
 use Illuminate\Routing\RouteCollection;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\File;
+use Illuminate\Validation\Validator;
 use Railroad\Soundslice\Services\SoundsliceService;
 use Railroad\Soundslice\Tests\TestCase;
 
@@ -277,7 +278,7 @@ class SoundsliceTest extends TestCase
     }
 
 
-    public function test_create_score_fails_folder_id_not_whole_number()
+    public function test_create_score_fails_validation_folder_id_not_whole_number()
     {
         $name = 'nameFoo ' . $this->faker->words(rand(1,3), true);
         $artist = 'artistFoo ' . $this->faker->words(rand(1,3), true);
@@ -286,16 +287,75 @@ class SoundsliceTest extends TestCase
             'name' => $name,
             'artist' => $artist,
             'folder-id' => $this->faker->words(rand(6,12), true)
+            // 'folder-id' => $this->folderId
         ]);
 
-        $expected = [
-            'status' => 'error',
-            'code' => 500,
-            'title' => 'SoundSliceJsonController@createScore failed (detail has message from Soundslice)',
-            'detail' => 'Client error: `POST https://www.soundslice.com/api/v1/scores/` resulted in a `422 Unknown ' .
-                'Status Code` response:' . PHP_EOL . '{"errors": {"folder_id": ["Enter a whole number."]}}' . PHP_EOL
-        ];
-        $actual = (array) json_decode($response->getContent())->errors{0};
+        $expected = json_encode(['errors' => [[
+            'status' => 'Bad Request',
+            'code' => 400,
+            'title' => 'SoundSliceJsonController@createScore validation failed',
+            'detail' => ['folder-id' => [0 => 'The folder-id must be a number.']]
+        ]]]);
+
+        $actual = $response->getContent();
+
+        $this->assertEquals(400, $response->getStatusCode());
+        $this->assertEquals($expected, $actual);
+    }
+
+    public function test_create_score_succeeds_despite_name_missing()
+    {
+        $response = $this->call('PUT', '/soundslice/create', []);
+
+        $this->assertEquals(201, $response->getStatusCode());
+    }
+
+    public function test_create_score_fails_validation_name_too_long()
+    {
+        do{
+            $name = $this->faker->text(266);
+            $length = strlen($name);
+        }while($length < 255);
+
+        $response = $this->call('PUT', '/soundslice/create', [
+            'name' => $name,
+//            'artist' => $artist,
+        ]);
+
+        $expected = json_encode(['errors' => [[
+            'status' => 'Bad Request',
+            'code' => 400,
+            'title' => 'SoundSliceJsonController@createScore validation failed',
+            'detail' => ['name' => [0 => 'The name may not be greater than 255 characters.']]
+        ]]]);
+
+        $actual = $response->getContent();
+
+        $this->assertEquals(400, $response->getStatusCode());
+        $this->assertEquals($expected, $actual);
+    }
+
+    public function test_create_score_fails_validation_artist_too_long()
+    {
+        do{
+            $artist = $this->faker->text(266);
+            $length = strlen($artist);
+        }while($length < 255);
+
+        $response = $this->call('PUT', '/soundslice/create', [
+            'artist' => $artist,
+        ]);
+
+        $expected = json_encode(['errors' => [[
+            'status' => 'Bad Request',
+            'code' => 400,
+            'title' => 'SoundSliceJsonController@createScore validation failed',
+            'detail' => ['artist' => [0 => 'The artist may not be greater than 255 characters.']]
+        ]]]);
+
+        $actual = $response->getContent();
+
+        $this->assertEquals(400, $response->getStatusCode());
         $this->assertEquals($expected, $actual);
     }
 
@@ -399,21 +459,87 @@ class SoundsliceTest extends TestCase
     }
 
 
-    public function test_create_score_validation_fail()
-    {
-        $this->markTestIncomplete();
-    }
-
-
     public function test_list()
     {
-        // todo: setup content to expect
+        $response = $this->call('PUT', '/soundslice/create', [
+            'name' => 'nameFoo ' . $this->faker->words(rand(1,3), true),
+            'folder-id' => $this->folderId
+        ]);
+
+        $putResultOne = ((array) json_decode($response->getContent()));
+
+        if(empty($putResultOne['slug'])){
+            $this->fail('slugOne empty');
+        }
+
+        $slugOne = $putResultOne['slug'];
+
+        $this->log_score_slug($slugOne);
+        $this->dummyScoresToDeleteOnTearDown[] = $slugOne;
+
+        $getResponseOne = $this->call('GET', '/soundslice/get/' . $slugOne);
+
+        if($getResponseOne->getStatusCode() !== 200){
+            $this->fail('$getResponseOne->getStatusCode() !== 200');
+        };
+
+        $getResponseOneContent = (array) json_decode($getResponseOne->getContent())->score;
+
+        $response = $this->call('PUT', '/soundslice/create', [
+            'name' => 'nameFoo ' . $this->faker->words(rand(1,3), true),
+            'folder-id' => $this->folderId
+        ]);
+
+        $putResultTwo = ((array) json_decode($response->getContent()));
+
+        if(empty($putResultTwo['slug'])){
+            $this->fail('slugTwo empty');
+        }
+
+        $slugTwo = $putResultTwo['slug'];
+
+        $this->log_score_slug($slugTwo);
+        $this->dummyScoresToDeleteOnTearDown[] = $slugTwo;
+
+        $getResponseTwo = $this->call('GET', '/soundslice/get/' . $slugTwo);
+
+        if($getResponseOne->getStatusCode() !== 200){
+            $this->fail('$getResponseOne->getStatusCode() !== 200');
+        };
+
+        $getResponseTwoContent = (array) json_decode($getResponseTwo->getContent())->score;
+
+        $forComparison = [
+            'expected' => [
+                $slugOne => $getResponseOneContent,
+                $slugTwo => $getResponseTwoContent
+            ]
+        ];
 
         $response = $this->call('GET', 'soundslice/list');
 
-        $content = json_decode($response->getContent());
+        $content = json_decode($response->getContent())->scores;
+
+        foreach($content as &$score){
+            $score = (array) $score;
+            if($score['slug'] === $slugOne){
+                $forComparison['actual'][$slugOne] = $score;
+            }
+            if($score['slug'] === $slugTwo){
+                $forComparison['actual'][$slugTwo] = $score;
+            }
+        }
+
+        foreach($forComparison['actual'] as &$score){
+            unset($score['slug']);
+        }
+
+        foreach($forComparison['expected'] as &$score){
+            unset($score['url']);
+        }
 
         $this->assertNotEquals('404', $response->getStatusCode());
+        $this->assertEquals($forComparison['expected'], $forComparison['actual']);
     }
 
 

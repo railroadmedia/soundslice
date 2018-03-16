@@ -6,7 +6,7 @@ namespace Railroad\Soundslice\Controllers;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use PHPUnit\Util\Json;
+use Illuminate\Validation\ValidationException;
 use Railroad\Soundslice\Services\SoundsliceService;
 
 class SoundsliceJsonController
@@ -29,9 +29,28 @@ class SoundsliceJsonController
      * @param Request $request
      * @return JsonResponse
      * @throws Exception
+     * @method ::validate() $request
      */
     public function createScore(Request $request)
     {
+        try{
+            $request->validate([ /* \Illuminate\Validation\Validator::validate() */
+                'name' => 'max:255',
+                'artist' => 'max:255',
+                'folder-id' => 'numeric'
+            ]);
+        }catch(ValidationException $exception){ // \Illuminate\Validation\Validator::validate() **does** throw this
+            $validator = $exception->validator;
+            $messages = $validator->getMessageBag()->getMessages();
+
+            return new JsonResponse(['errors' => [[
+                'status' => 'Bad Request',
+                'code' => 400,
+                'title' => 'SoundSliceJsonController@createScore validation failed',
+                'detail' => $messages
+            ] ]], 400);
+        }
+
         try{
             $slug = $this->soundsliceService->createScore(
                 $request->get('name'),

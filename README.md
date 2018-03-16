@@ -128,15 +128,15 @@ Methods
 
 **PUT** "create"
 
-| param                     | data-type | required  |
-|---------------------------|-----------|-----------|
-| name                      | string    | yes       |
-| artist                    | string    |           |
-| folder-id                 | string    |           |
-| publicly-listed\*         | boolean   |           |
-| embed-white-list-only\*   | boolean   |           |
-| embed-globally\*          | boolean   |           |
-| printing-allowed          | boolean   |           |
+| param                     | data-type | required  | optional  |
+|---------------------------|-----------|-----------|-----------|
+| name                      | string    |           |     x     |
+| artist                    | string    |           |     x     |
+| folder-id                 | string    |           |     x     |
+| publicly-listed\*         | boolean   |           |     x     |
+| embed-white-list-only\*   | boolean   |           |     x     |
+| embed-globally\*          | boolean   |           |     x     |
+| printing-allowed          | boolean   |           |     x     |
 
 \* For notes about these params see the "Create Score Parameter Notes" section below 
 
