@@ -120,6 +120,67 @@ Each error item will have the fields as per the example below:
 
 
 
+## Validation Errors
+
+Will return `400 Bad Request` with an "error" object as the data. The `detail` item in that error with have information
+about why the validation failed.
+
+**There is an item for each field that failed, and each field item will contain an item for each failure
+reason.** 
+
+For example, say we were trying to create a new "baz". If the "foo" field failed because it was non-numeric and longer 
+than 16 characters we'll see something like this:
+
+```json
+{
+    "errors":[
+        {
+            "status":"Bad Request",
+            "code":400,
+            "title":"create baz request validation failure",
+            "detail":{
+                "foo":[
+                    "The foo must be a number."
+                ]
+            }
+        }
+    ]
+}
+```
+
+Note: that failure is for just one field.
+
+If there was that failure - two validation failures on just one field, and then validation failure on a whole other
+field, it would look like this: (let's say the "artist" field is manditory)
+
+```json
+{
+    "errors":[
+        {
+            "status":"Bad Request",
+            "code":400,
+            "title":"create baz request validation failure",
+            "detail":{
+                "foo":[
+                    "The foo may not be greater than 16.",
+                    "The foo must be a number."
+                ],
+                "bar":[
+                    "The bar field is required."
+                ]
+            }
+        }
+    ]
+}
+```
+
+ 
+
+The value will be a human-friendly explanation of why the validation.
+
+
+
+
 Methods
 ------------------------------------------------------------------------------------------------------------------------
 
