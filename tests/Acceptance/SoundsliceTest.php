@@ -118,21 +118,14 @@ class SoundsliceTest extends TestCase
     }
 
     private function deleteDummyScores(){
-        $failed = [];
         foreach($this->dummyScoresToDeleteOnTearDown as $scoreSlug){
             try{
-                if(!$this->soundSliceService->deleteScore($scoreSlug)){
-                    $failed[] = $scoreSlug;
-                }
+                $this->soundSliceService->deleteScore($scoreSlug);
             }catch(\Exception $ce){
-                $this->fail('"SoundsliceTest::deleteDummyScores" failed');
+                echo 'Failed to delete score ' . $scoreSlug . '. It might have already been deleted';
             }
         }
-        if(!empty($failed)){
-            $this->fail('failed to delete a dummy score created for this test (' .
-                print_r($this->dummyScoresToDeleteOnTearDown, true) . ').'
-            );
-        }
+        $this->dummyScoresToDeleteOnTearDown = [];
     }
 
     private function deleteDummyFolder(){
@@ -170,20 +163,6 @@ class SoundsliceTest extends TestCase
         return count($scores);
     }
 
-
-    /**
-     * This isn't actually a test - it's just a way of deleting scores created in testing. Otherwise we have to
-     * go into the soundslice "slice manager" web UI and manually delete each one. Fuck that. Just look in
-     * "to-delete-scores.txt" in the root of this project to see a list of slugs representing the scores created
-     * in the process of running these tests. Merry xmas. Jonathan, 2018
-     */
-//    public function test_delete_dummy_content_on_soundslice()
-//    {
-//        $this->delete_dummy_scores_on_soundslice();
-//        echo PHP_EOL;
-//        $this->delete_dummy_folders_on_soundslice();
-//    }
-
     private function delete_dummy_scores_on_soundslice()
     {
         $toDelete = file(self::fileWithSlugsOfDummyScores);
@@ -204,7 +183,7 @@ class SoundsliceTest extends TestCase
             }
         }
 
-        echo '---------- Deleted ' . $beforeCount - $this->countScoresInAccount() . ' scores. ----------' . PHP_EOL;
+        echo '---------- Deleted ' . ($beforeCount - $this->countScoresInAccount()) . ' scores. ----------' . PHP_EOL;
 
         $itFuckenWorked = true;
         $this->assertTrue($itFuckenWorked);
@@ -282,8 +261,6 @@ class SoundsliceTest extends TestCase
 
     public function test_create_score()
     {
-        $this->createDummyFolder(); // sets $this->folderId
-
         $name = 'nameFoo ' . $this->faker->words(rand(1,3), true);
         $artist = 'artistFoo ' . $this->faker->words(rand(1,3), true);
 
@@ -540,5 +517,20 @@ class SoundsliceTest extends TestCase
     public function test_create_notation_with_same_values()
     {
         $this->markTestIncomplete();
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /**
+     * This isn't actually a test - it's just a way of deleting scores created in testing. Otherwise we have to
+     * go into the soundslice "slice manager" web UI and manually delete each one. Fuck that. Just look in
+     * "to-delete-scores.txt" in the root of this project to see a list of slugs representing the scores created
+     * in the process of running these tests. Merry xmas. Jonathan, 2018
+     */
+    public function test_delete_dummy_content_on_soundslice()
+    {
+        $this->delete_dummy_scores_on_soundslice();
+        echo PHP_EOL;
+        $this->delete_dummy_folders_on_soundslice();
     }
 }
