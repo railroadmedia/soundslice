@@ -132,11 +132,7 @@ class SoundsliceTest extends TestCase
         try{
             $success = $this->soundSliceService->deleteFolder($this->folderId);
         }catch(\Exception $e){
-            $this->fail('"SoundsliceTest::deleteDummyFolder" failed');
-        }
-
-        if(!$success){
-            $this->fail('failed to delete dir created for this test (' . $this->folderId . ').');
+            // $this->fail('"SoundsliceTest::deleteDummyFolder" failed');
         }
     }
 
@@ -327,9 +323,79 @@ class SoundsliceTest extends TestCase
     }
 
 
-    public function test_create_score_fails_already_exists()
+    public function test_create_score_succeeds_despite_identical_everything()
     {
-        $this->markTestIncomplete();
+        $name = 'nameFoo ' . $this->faker->words(rand(1,3), true);
+        $artist = 'artistFoo ' . $this->faker->words(rand(1,3), true);
+
+        // ------------ one ------------
+
+        $response = $this->call('PUT', '/soundslice/create', [
+            'name' => $name,
+            'artist' => $artist,
+            'folder-id' => $this->folderId
+        ]);
+
+        $contentOne = (array) json_decode($response->getContent());
+
+        $this->assertNotEmpty($contentOne['slug']);
+
+        if(empty($contentOne['slug'])){
+            $this->fail('slugOne empty');
+        }
+        $slugOne = $contentOne['slug'];
+
+        if(isset($contentOne['slug'])){
+            $this->log_score_slug($contentOne['slug']);
+            $this->dummyScoresToDeleteOnTearDown[] = $contentOne['slug'];
+        }
+
+        // ------------ two ------------
+
+        $response = $this->call('PUT', '/soundslice/create', [
+            'name' => $name,
+            'artist' => $artist,
+            'folder-id' => $this->folderId
+        ]);
+
+        $contentTwo = (array) json_decode($response->getContent());
+
+        if(empty($contentTwo['slug'])){
+            $this->fail('slugTwo empty');
+        }
+        $slugTwo = $contentTwo['slug'];
+
+        if(isset($contentOne['slug'])){
+            $this->log_score_slug($contentOne['slug']);
+            $this->dummyScoresToDeleteOnTearDown[] = $contentOne['slug'];
+        }
+
+        // -------------------------------
+
+        $relevant = [];
+
+        $response = $this->call('GET', 'soundslice/list');
+
+        $content = (array) json_decode($response->getContent())->scores;
+
+        foreach($content as &$score){
+            $score = (array) $score;
+            if($score['slug'] === $slugTwo || $score['slug'] === $slugOne){
+                $relevant[] = $score;
+            }
+        }
+
+        $this->assertEquals(2, count($relevant));
+
+        $slugs = [];
+
+        foreach($relevant as &$score){
+            $slugs[] = $score['slug'];
+            unset($score['slug']);
+        }
+
+        $this->assertNotEquals($slugs[0], $slugs[1]);
+        $this->assertEquals($relevant[0], $relevant[1]);
     }
 
 
