@@ -13,6 +13,9 @@ class SoundsliceTest extends TestCase
     const TEST_FOLDER_ID = 5619;
     const S3_DIR = 'soundslice-dev-1802';
 
+    const fileWithSlugsOfDummyScores = __DIR__ . '/../../to-delete-scores.txt';
+    const fileWithIdsOfDummyFolders = __DIR__ . '/../../to-delete-folders.txt';
+
     private $folderId;
     private $dummyScoresToDeleteOnTearDown;
 
@@ -36,18 +39,22 @@ class SoundsliceTest extends TestCase
 
     protected function tearDown()
     {
-//        if(!empty($this->dummyScoresToDeleteOnTearDown)){
-//            $this->deleteDummyScores();
-//        }
-//
-//        if(isset($this->folderId)){
-//            $this->deleteDummyFolder();
-//        }
+        if(!empty($this->dummyScoresToDeleteOnTearDown)){
+            $this->deleteDummyScores();
+        }
+
+        if(isset($this->folderId)){
+            $this->deleteDummyFolder();
+        }
 
         parent::tearDown();
     }
 
     private function createDummyFolder($parentId = self::TEST_FOLDER_ID){
+        if(isset($this->folderId)){
+            return;
+        }
+
         try{
             $this->folderId = $this->soundSliceService->createFolder($this->getNameForADummy('folder'), $parentId);
         }catch(\Exception $ce){
@@ -149,12 +156,12 @@ class SoundsliceTest extends TestCase
 
     private function log_folder_id($folderId)
     {
-        File::append(__DIR__ . '/../../to-delete-folders.txt', $folderId. ',' . PHP_EOL);
+        File::append(self::fileWithIdsOfDummyFolders, PHP_EOL . $folderId);
     }
 
     private function log_score_slug($scoreSlug)
     {
-        File::append(__DIR__ . '/../../to-delete-scores.txt', $scoreSlug. ',' . PHP_EOL);
+        File::append(self::fileWithSlugsOfDummyScores, $scoreSlug . PHP_EOL);
     }
 
     private function countScoresInAccount(){
@@ -163,24 +170,29 @@ class SoundsliceTest extends TestCase
         return count($scores);
     }
 
+
     /**
      * This isn't actually a test - it's just a way of deleting scores created in testing. Otherwise we have to
      * go into the soundslice "slice manager" web UI and manually delete each one. Fuck that. Just look in
      * "to-delete-scores.txt" in the root of this project to see a list of slugs representing the scores created
      * in the process of running these tests. Merry xmas. Jonathan, 2018
      */
-    public function test_delete_many_scores()
+//    public function test_delete_dummy_content_on_soundslice()
+//    {
+//        $this->delete_dummy_scores_on_soundslice();
+//        echo PHP_EOL;
+//        $this->delete_dummy_folders_on_soundslice();
+//    }
+
+    private function delete_dummy_scores_on_soundslice()
     {
-        $toDelete = [
-            154497,
-            154498
-        ];
+        $toDelete = file(self::fileWithSlugsOfDummyScores);
+
+        foreach($toDelete as &$slug){
+            $slug = rtrim($slug);
+        }
 
         echo 'Attempting to delete ' . count($toDelete) . ' scores.' . PHP_EOL;
-
-        if(empty($toDelete)){
-            $this->fail('Add items to delete, wingnut.');
-        }
 
         $beforeCount = $this->countScoresInAccount();
 
@@ -188,70 +200,51 @@ class SoundsliceTest extends TestCase
             try{
                 $this->soundSliceService->deleteScore($slug);
             }catch(\Exception $e){
-                $probablyAlreadyDeleted[$slug] = $e->getMessage();
+                // $deleteFailed[$slug] = $e->getMessage();
             }
         }
 
-        if(!empty($probablyAlreadyDeleted)){
-            echo count($probablyAlreadyDeleted) . ' not deleted perhaps because already deleted:' . PHP_EOL;
-            // echo print_r($probablyAlreadyDeleted, true);
-        }
-
-        $afterCount = $this->countScoresInAccount();
-
-        $numberDeleted = $beforeCount - $afterCount;
-
-        echo PHP_EOL . 'Deleted ' . $numberDeleted . ' scores.';
+        echo '---------- Deleted ' . $beforeCount - $this->countScoresInAccount() . ' scores. ----------' . PHP_EOL;
 
         $itFuckenWorked = true;
-
         $this->assertTrue($itFuckenWorked);
+
+        file_put_contents(self::fileWithSlugsOfDummyScores, '');
     }
 
-    /**
-     * Same as "test_delete_many_scores" method above, but for folders obviously. Folders must be empty before they
-     * can be deleted.
-     */
-    public function test_delete_many_folders()
+    private function delete_dummy_folders_on_soundslice()
     {
-        $toDelete = [
-            111,
-            112,
-            113
-        ];
+        $toDelete = file(self::fileWithIdsOfDummyFolders);
+
+        foreach($toDelete as &$id){
+            $id = rtrim($id);
+        }
+
+        $toDelete = array_filter($toDelete, function($value) { return $value !== ''; });
 
         echo 'Attempting to delete ' . count($toDelete) . ' folders.' . PHP_EOL;
-
-        if(empty($toDelete)){
-            $this->fail('Add items to delete, wingnut.');
-        }
 
         $numberDeleted = 0;
 
         foreach($toDelete as $folderId){
             try{
-                $this->soundSliceService->deleteFolder($folderId);
-                $numberDeleted++;
+                if($this->soundSliceService->deleteFolder($folderId)){
+                    $numberDeleted++;
+                }
             }catch(\Exception $e){
-                $probablyAlreadyDeleted[$folderId] = $e->getMessage();
+                // $deleteFailed[$folderId] = $e->getMessage();
             }
         }
 
-        if(!empty($probablyAlreadyDeleted)){
-            echo count($probablyAlreadyDeleted) . ' not deleted perhaps because already deleted:' . PHP_EOL;
-            // echo print_r($probablyAlreadyDeleted, true);
-
-            $numberDeleted = $numberDeleted - count($probablyAlreadyDeleted);
-            $numberDeleted = $numberDeleted < 0 ? 0 : $numberDeleted;
-
-            echo count($toDelete) - count($probablyAlreadyDeleted) - $numberDeleted . ' unaccounted for.' . PHP_EOL;
-        }
-
-        echo PHP_EOL . 'Deleted ' . $numberDeleted . ' folders.' . PHP_EOL;
+        echo '---------- Deleted ' . $numberDeleted . ' folders. ----------' . PHP_EOL;
 
         $itFuckenWorked = true;
 
         $this->assertTrue($itFuckenWorked);
+
+        file_put_contents(self::fileWithIdsOfDummyFolders, '');
+
+        $this->folderId = null;
     }
 
     /**
@@ -286,7 +279,6 @@ class SoundsliceTest extends TestCase
 //    {
 //        $slug = 1234; $altSlug = $this->altSlug($slug); $this->assertNotEquals($slug, $altSlug);
 //    }
-
 
     public function test_create_score()
     {
