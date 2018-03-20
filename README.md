@@ -67,7 +67,8 @@ slug `foo` would actually be `/soundslice/get/foo`.
 All optional booleans default to `false` unless noted otherwise.
 
 
-## List of methods available
+List of methods available
+------------------------------------------------------------------------------------------------------------------------
 
 * createScore
 * list
@@ -79,7 +80,8 @@ All optional booleans default to `false` unless noted otherwise.
 * create notation
 
 
-## Errors
+Errors
+------------------------------------------------------------------------------------------------------------------------
 
 All errors are available as an item in the Json response's `errors` array (which exists in place of the `data` array). 
 
@@ -120,7 +122,23 @@ Each error item will have the fields as per the example below:
 
 
 
-## Validation Errors
+Validation Errors
+------------------------------------------------------------------------------------------------------------------------
+
+
+### TL;DR
+
+`400 Bad Request` with data:
+
+* field that failed
+    * what was wrong
+    * what was wrong
+* field that failed
+    * what was wrong
+
+
+
+### Details
 
 Will return `400 Bad Request` with an "error" object as the data. The `detail` item in that error with have information
 about why the validation failed.
@@ -174,16 +192,12 @@ field, it would look like this: (let's say the "artist" field is manditory)
 }
 ```
 
- 
-
 The value will be a human-friendly explanation of why the validation.
-
 
 
 
 Methods
 ------------------------------------------------------------------------------------------------------------------------
-
 
 ### create score
 

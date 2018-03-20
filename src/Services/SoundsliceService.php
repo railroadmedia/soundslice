@@ -2,9 +2,9 @@
 
 namespace Railroad\Soundslice\Services;
 
-use Exception;
 use GuzzleHttp\Client;
 use Illuminate\Http\JsonResponse;
+use Railroad\Soundslice\Exceptions\ExternalErrorException;
 
 class SoundsliceService
 {
@@ -37,7 +37,7 @@ class SoundsliceService
      * @param bool $embedWhiteListOnly
      * @param bool $printingAllowed
      * @return array|bool|JsonResponse
-     * @throws Exception
+     * @throws ExternalErrorException
      */
     public function createScore(
         $name,
@@ -48,28 +48,31 @@ class SoundsliceService
         $embedGlobally = false,
         $printingAllowed = false
     ) {
-        $response = $this->client->request(
-            'POST',
-            'https://www.soundslice.com/api/v1/scores/',
-            [
-                'auth' => $this->auth,
-                'form_params' => [
-                    'name' => $name,
-                    'artist' => $artist,
-                    'status' => $publiclyListed ? 3 : 1,
-                    'embed_status' => $embedWhiteListOnly ? 4 : ($embedGlobally ? 2 : 1),
-                    'print_status' => $printingAllowed ? 3 : 1,
-                    'folder_id' => $folderId,
-                ],
-            ]
-        );
+        try{
+            $response = $this->client->request(
+                'POST',
+                'https://www.soundslice.com/api/v1/scores/',
+                [
+                    'auth' => $this->auth,
+                    'form_params' => [
+                        'name' => $name,
+                        'artist' => $artist,
+                        'status' => $publiclyListed ? 3 : 1,
+                        'embed_status' => $embedWhiteListOnly ? 4 : ($embedGlobally ? 2 : 1),
+                        'print_status' => $printingAllowed ? 3 : 1,
+                        'folder_id' => $folderId,
+                    ],
+                ]
+            );
+        }catch(\Exception $e){
+            throw new ExternalErrorException($e->getMessage(), $e->getCode());
+        }
 
         $body = json_decode($response->getBody(), true);
         $code = $response->getStatusCode();
 
         if ($code !== 201) {
-            // todo: replace with custom exception class
-            throw new Exception($body['error'], $code);
+            throw new ExternalErrorException($body['error'], $code);
         }
 
         return $body['slug'];
@@ -77,44 +80,84 @@ class SoundsliceService
 
     /**
      * @param $slug
+     * @param $folderId
+     * @return mixed
+     * @throws ExternalErrorException
+     */
+    public function moveScore($slug, $folderId)
+    {
+        $url = 'https://www.soundslice.com/api/v1/scores/' . $slug . '/move/';
+
+        $options = [
+            'auth' => $this->auth,
+            'form_params' => [
+                'folder_id' => $folderId
+            ]
+        ];
+
+        try{
+            $response = $this->client->request(
+                'POST',
+                $url,
+                $options
+            );
+        }catch(\Exception $e){
+            throw new ExternalErrorException($e->getMessage(), $e->getCode());
+        }
+
+        $body = json_decode($response->getBody(), true);
+        $code = $response->getStatusCode();
+
+
+        if ($code !== 201) {
+            throw new ExternalErrorException($body['error'], $code);
+        }
+
+        return $body['id'];
+    }
+
+    /**
+     * @param $slug
      * @param $assetUrl
      * @return bool
-     * @throws Exception
+     * @throws ExternalErrorException
      */
     public function addNotation($slug, $assetUrl)
     {
         $notationXml = file_get_contents($assetUrl);
 
-        $response = $this->client->request(
-            'POST',
-            'https://www.soundslice.com/api/v1/scores/' . $slug . '/notation/',
-            [
-                'auth' => $this->auth,
-            ]
-        );
+        try{
+            $response = $this->client->request(
+                'POST',
+                'https://www.soundslice.com/api/v1/scores/' . $slug . '/notation/',
+                ['auth' => $this->auth]
+            );
+        }catch(\Exception $e){
+            throw new ExternalErrorException($e->getMessage(), $e->getCode());
+        }
 
         $body = json_decode($response->getBody(), true);
         $code = $response->getStatusCode();
 
         if ($code !== 201) {
-            // todo: replace with custom exception class
-            throw new Exception($body['error'], $code);
+            throw new ExternalErrorException($body['error'], $code);
         }
 
-        $response = $this->client->request(
-            'PUT',
-            $body['url'],
-            [
-                'body' => $notationXml,
-            ]
-        );
+        try{
+            $response = $this->client->request(
+                'PUT',
+                $body['url'],
+                ['body' => $notationXml]
+            );
+        }catch(\Exception $e){
+            throw new ExternalErrorException($e->getMessage(), $e->getCode());
+        }
 
         $body = json_decode($response->getBody(), true);
         $code = $response->getStatusCode();
 
         if ($code !== 201 && $code !== 200) {
-            // todo: replace with custom exception class
-            throw new Exception($body['error'], $code);
+            throw new ExternalErrorException($body['error'], $code);
         }
 
         return true;
@@ -122,16 +165,21 @@ class SoundsliceService
 
     /**
      * @return array
+     * @throws ExternalErrorException
      */
     public function listScores()
     {
-        $response = $this->client->request(
-            'GET',
-            'https://www.soundslice.com/' . 'api/v1/scores/',
-            [
-                'auth' => $this->auth
-            ]
-        );
+        try {
+            $response = $this->client->request(
+                'GET',
+                'https://www.soundslice.com/' . 'api/v1/scores/',
+                [
+                    'auth' => $this->auth
+                ]
+            );
+        }catch(\Exception $e){
+            throw new ExternalErrorException($e->getMessage(), $e->getCode());
+        }
 
         $body = json_decode($response->getBody(), true);
 
@@ -142,28 +190,31 @@ class SoundsliceService
      * @param $name
      * @param $parentId
      * @return bool
-     * @throws Exception
+     * @throws ExternalErrorException
      */
     public function createFolder($name, $parentId = '')
     {
-        $response = $this->client->request(
-            'POST',
-            'https://www.soundslice.com/' . 'api/v1/folders/',
-            [
-                'auth' => $this->auth,
-                'form_params' => [
-                    'name' => $name,
-                    'parent_id' => $parentId
-                ],
-            ]
-        );
+        try {
+            $response = $this->client->request(
+                'POST',
+                'https://www.soundslice.com/' . 'api/v1/folders/',
+                [
+                    'auth' => $this->auth,
+                    'form_params' => [
+                        'name' => $name,
+                        'parent_id' => $parentId
+                    ],
+                ]
+            );
+        }catch(\Exception $e){
+            throw new ExternalErrorException($e->getMessage(), $e->getCode());
+        }
 
         $body = json_decode($response->getBody(), true);
         $code = $response->getStatusCode();
 
         if ($code !== 201) {
-            // todo: replace with custom exception class
-            throw new Exception($body['error'], $code);
+            throw new ExternalErrorException($body['error'], $code);
         }
 
         return $body['id'];
@@ -172,24 +223,27 @@ class SoundsliceService
     /**
      * @param $id
      * @return bool
-     * @throws Exception
+     * @throws ExternalErrorException
      */
     public function deleteFolder($id)
     {
-        $response = $this->client->request(
-            'DELETE',
-            'https://www.soundslice.com/' . 'api/v1/folders/' . $id . '/',
-            [
-                'auth' => $this->auth
-            ]
-        );
+        try{
+            $response = $this->client->request(
+                'DELETE',
+                'https://www.soundslice.com/' . 'api/v1/folders/' . $id . '/',
+                [
+                    'auth' => $this->auth
+                ]
+            );
+        }catch(\Exception $e){
+            throw new ExternalErrorException($e->getMessage(), $e->getCode());
+        }
 
         $body = json_decode($response->getBody(), true);
         $code = $response->getStatusCode();
 
         if ($code !== 201 && $code !== 200) { // soundslice docs say expect 201, but we actually get 200
-            // todo: replace with custom exception class
-            throw new Exception($body['error'], $code);
+            throw new ExternalErrorException($body['error'], $code);
         }
 
         return true;
@@ -198,24 +252,27 @@ class SoundsliceService
     /**
      * @param $slug
      * @return mixed
-     * @throws Exception
+     * @throws ExternalErrorException
      */
     public function getScore($slug)
     {
-        $response = $this->client->request(
-            'GET',
-            'https://www.soundslice.com/' . 'api/v1/scores/' . $slug . '/',
-            [
-                'auth' => $this->auth
-            ]
-        );
+        try{
+            $response = $this->client->request(
+                'GET',
+                'https://www.soundslice.com/' . 'api/v1/scores/' . $slug . '/',
+                [
+                    'auth' => $this->auth
+                ]
+            );
+        }catch(\Exception $e){
+            throw new ExternalErrorException($e->getMessage(), $e->getCode());
+        }
 
         $body = json_decode($response->getBody(), true);
         $code = $response->getStatusCode();
 
         if ($code !== 200) {
-            // todo: replace with custom exception class
-            throw new Exception($body['error'], $code);
+            throw new ExternalErrorException($body['error'], $code);
         }
 
         return $body;
@@ -225,24 +282,27 @@ class SoundsliceService
      *
      * @param $slug
      * @return bool
-     * @throws Exception
+     * @throws ExternalErrorException
      */
     public function deleteScore($slug)
     {
-        $response = $this->client->request(
-            'DELETE',
-            'https://www.soundslice.com/' . 'api/v1/scores/' . $slug . '/',
-            [
-                'auth' => $this->auth
-            ]
-        );
+        try {
+            $response = $this->client->request(
+                'DELETE',
+                'https://www.soundslice.com/' . 'api/v1/scores/' . $slug . '/',
+                [
+                    'auth' => $this->auth
+                ]
+            );
+        }catch(\Exception $e){
+            throw new ExternalErrorException($e->getMessage(), $e->getCode());
+        }
 
         $body = json_decode($response->getBody(), true);
         $code = $response->getStatusCode();
 
         if ($code !== 201) {
-            // todo: replace with custom exception class
-            throw new Exception($body['error'], $code);
+            throw new ExternalErrorException($body['error'], $code);
         }
 
         return true;

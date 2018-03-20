@@ -2,17 +2,15 @@
 
 namespace Railroad\Soundslice\Tests\Acceptance;
 
-use Illuminate\Routing\RouteCollection;
-use Illuminate\Routing\Router;
+use Exception;
 use Illuminate\Support\Facades\File;
-use Illuminate\Validation\Validator;
+use Railroad\Soundslice\Exceptions\ExternalErrorException;
 use Railroad\Soundslice\Services\SoundsliceService;
 use Railroad\Soundslice\Tests\TestCase;
 
 class SoundsliceTest extends TestCase
 {
-    const TEST_FOLDER_ID = 5619;
-    const S3_DIR = 'soundslice-dev-1802';
+    const TEST_FOLDER_ID = 6538;
 
     const fileWithSlugsOfDummyScores = __DIR__ . '/../../to-delete-scores.txt';
     const fileWithIdsOfDummyFolders = __DIR__ . '/../../to-delete-folders.txt';
@@ -51,21 +49,32 @@ class SoundsliceTest extends TestCase
         parent::tearDown();
     }
 
-    private function createDummyFolder($parentId = self::TEST_FOLDER_ID){
-        if(isset($this->folderId)){
-            return;
+
+
+    // 0. helper functions ---------------------------------------------------------------------------------------------
+
+    private function createDummyFolder($parentId = self::TEST_FOLDER_ID, $returnNew = false){
+        if(isset($this->folderId) && $returnNew === false){
+            return $this->folderId;
         }
 
+        $folderId = '';
+
         try{
-            $this->folderId = $this->soundSliceService->createFolder($this->getNameForADummy('folder'), $parentId);
-        }catch(\Exception $ce){
+            $folderId = $this->soundSliceService->createFolder(
+                $this->getNameForADummy('folder'), $parentId
+            );
+        }catch(ExternalErrorException $e){
             $this->fail('"SoundsliceTest::createDummyFolder" failed');
         }
 
-        $this->log_folder_id($this->folderId);
+        $this->log_folder_id($folderId);
 
-        if(empty($this->folderId)){
-            $this->fail('dummy folder appears to have not worked');
+        if($returnNew){
+            return $folderId;
+        }else{
+            $this->folderId = $folderId;
+            return $this->folderId;
         }
     }
 
@@ -122,8 +131,8 @@ class SoundsliceTest extends TestCase
         foreach($this->dummyScoresToDeleteOnTearDown as $scoreSlug){
             try{
                 $this->soundSliceService->deleteScore($scoreSlug);
-            }catch(\Exception $ce){
-                echo 'Failed to delete score ' . $scoreSlug . '. It might have already been deleted';
+            }catch(Exception $e){
+                // meh
             }
         }
         $this->dummyScoresToDeleteOnTearDown = [];
@@ -131,9 +140,9 @@ class SoundsliceTest extends TestCase
 
     private function deleteDummyFolder(){
         try{
-            $success = $this->soundSliceService->deleteFolder($this->folderId);
-        }catch(\Exception $e){
-            // $this->fail('"SoundsliceTest::deleteDummyFolder" failed');
+            $this->soundSliceService->deleteFolder($this->folderId);
+        }catch(Exception $e){
+            // meh
         }
     }
 
@@ -151,7 +160,7 @@ class SoundsliceTest extends TestCase
 
     private function log_score_slug($scoreSlug)
     {
-        File::append(self::fileWithSlugsOfDummyScores, $scoreSlug . PHP_EOL);
+        File::append(self::fileWithSlugsOfDummyScores, PHP_EOL . $scoreSlug);
     }
 
     private function countScoresInAccount(){
@@ -175,7 +184,7 @@ class SoundsliceTest extends TestCase
         foreach($toDelete as $slug){
             try{
                 $this->soundSliceService->deleteScore($slug);
-            }catch(\Exception $e){
+            }catch(ExternalErrorException $e){
                 // $deleteFailed[$slug] = $e->getMessage();
             }
         }
@@ -207,7 +216,7 @@ class SoundsliceTest extends TestCase
                 if($this->soundSliceService->deleteFolder($folderId)){
                     $numberDeleted++;
                 }
-            }catch(\Exception $e){
+            }catch(ExternalErrorException $e){
                 // $deleteFailed[$folderId] = $e->getMessage();
             }
         }
@@ -249,12 +258,11 @@ class SoundsliceTest extends TestCase
 
 
     // -----------------------------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
 
 
-//    public function test_dummySlugUniqueNotInProd()
-//    {
-//        $slug = 1234; $altSlug = $this->altSlug($slug); $this->assertNotEquals($slug, $altSlug);
-//    }
+    // 1. test_create_score --------------------------------------------------------------------------------------------
 
     public function test_create_score()
     {
@@ -276,7 +284,6 @@ class SoundsliceTest extends TestCase
             $this->dummyScoresToDeleteOnTearDown[] = $response['slug'];
         }
     }
-
 
     public function test_create_score_fails_validation_folder_id_not_whole_number()
     {
@@ -315,12 +322,9 @@ class SoundsliceTest extends TestCase
         do{
             $name = $this->faker->text(266);
             $length = strlen($name);
-        }while($length < 255);
+        }while($length < 256);
 
-        $response = $this->call('PUT', '/soundslice/create', [
-            'name' => $name,
-//            'artist' => $artist,
-        ]);
+        $response = $this->call('PUT', '/soundslice/create', ['name' => $name]);
 
         $expected = json_encode(['errors' => [[
             'status' => 'Bad Request',
@@ -359,7 +363,6 @@ class SoundsliceTest extends TestCase
         $this->assertEquals($expected, $actual);
     }
 
-
     public function test_create_score_fails_folder_does_not_exist()
     {
         $name = 'nameFoo ' . $this->faker->words(rand(1,3), true);
@@ -374,14 +377,13 @@ class SoundsliceTest extends TestCase
         $expected = [
             'status' => 'error',
             'code' => 500,
-            'title' => 'SoundSliceJsonController@createScore failed (detail has message from Soundslice)',
+            'title' => 'score create error',
             'detail' => 'Client error: `POST https://www.soundslice.com/api/v1/scores/` resulted in a `422 Unknown ' .
                 'Status Code` response:' . PHP_EOL . '{"errors": {"folder_id": ["This folder ID is invalid."]}}' . PHP_EOL
         ];
         $actual = (array) json_decode($response->getContent())->errors{0};
         $this->assertEquals($expected, $actual);
     }
-
 
     public function test_create_score_succeeds_despite_identical_everything()
     {
@@ -458,6 +460,9 @@ class SoundsliceTest extends TestCase
         $this->assertEquals($relevant[0], $relevant[1]);
     }
 
+
+
+    // 2. test_list -----------------------------------------------------------------------------------------------------
 
     public function test_list()
     {
@@ -538,10 +543,13 @@ class SoundsliceTest extends TestCase
             unset($score['url']);
         }
 
-        $this->assertNotEquals('404', $response->getStatusCode());
+        $this->assertEquals('200', $response->getStatusCode());
         $this->assertEquals($forComparison['expected'], $forComparison['actual']);
     }
 
+
+
+    // 3. test_get_score -----------------------------------------------------------------------------------------------
 
     public function test_get_score()
     {
@@ -587,7 +595,6 @@ class SoundsliceTest extends TestCase
         $this->assertEquals($expected, $score);
     }
 
-
     public function test_get_score_not_found()
     {
         $name = 'nameFoo ' . $this->faker->words(rand(1,3), true);
@@ -612,7 +619,7 @@ class SoundsliceTest extends TestCase
 
         $altSlug = $this->dummySlugUniqueNotInProd();
 
-        $response = $this->call('get', '/soundslice/get/' . $altSlug);
+        $response = $this->call('GET', '/soundslice/get/' . $altSlug);
 
         $decodedContents = (array) json_decode($response->getContent());
 
@@ -621,97 +628,389 @@ class SoundsliceTest extends TestCase
     }
 
 
+
+    // 4. test_delete_score --------------------------------------------------------------------------------------------
+
     public function test_delete_score()
     {
         $score = $this->createDummyScore();
-        $response = $this->call('delete', '/soundslice/delete/', ['slug' => $score['slug']]);
+        $slug = $score['slug'];
+        $response = $this->call('delete', '/soundslice/delete/' . $slug);
         $decodedContentAsArray = (array) json_decode($response->getContent());
         $this->assertTrue($decodedContentAsArray['deleted']);
-    }
 
+        $response = $this->call('GET', 'soundslice/list');
+        $content = json_decode($response->getContent())->scores;
+        $scoreFoundInList = false;
+        foreach($content as &$score){
+            $score = (array) $score;
+            if($score['slug'] === $slug){
+                $scoreFoundInList = true;
+            }
+        }
+        $this->assertFalse($scoreFoundInList);
+    }
 
     public function test_delete_score_not_found()
     {
-        $response = $this->call('delete', '/soundslice/delete/', ['slug' => $this->dummySlugUniqueNotInProd()]);
-        $decodedContentAsArray = (array) json_decode($response->getContent());
-        $this->assertFalse(isset($decodedContentAsArray['deleted']));
-        $this->assertTrue(array_key_exists('errors', $decodedContentAsArray));
+        $slug = $this->dummySlugUniqueNotInProd();
+        $response = $this->call('delete', '/soundslice/delete/' . $slug);
+
+        $this->assertTrue(array_key_exists('errors', ((array) json_decode($response->getContent()))));
+        $this->assertEquals(500, $response->getStatusCode());
+
+        $this->assertEquals(json_encode(['errors' => [[
+            'status' => 'error',
+            'code' => 500,
+            'title' => 'score delete error',
+            'detail' => 'Param("slug): "' . $slug . '", error message: '.
+                '"Client error: `DELETE https://www.soundslice.com/api/v1/scores/' . $slug .
+                '/` resulted in a `403 Forbidden` response:' . PHP_EOL . '{}' . PHP_EOL . '".'
+        ]]]), $response->getContent());
+    }
+
+    public function test_delete_score_slug_omitted()
+    {
+        $response = $this->call('delete', '/soundslice/delete/');
+
+        $this->assertEquals(404, $response->getStatusCode());
+    }
+
+
+
+    // 5. test_create_folder and test_delete_folder --------------------------------------------------------------------
+
+    public function test_create_folder()
+    {
+        $parentId = self::TEST_FOLDER_ID;
+
+        $options = [
+            'name' => $this->getNameForADummy('folder'),
+            'parent_id' => $parentId
+        ];
+        $responseFolderCreate = $this->call('PUT', 'soundslice/folder/create', $options);
+
+        $responseFolderCreateDecoded = (array) json_decode($responseFolderCreate->getContent());
+
+        $folderId = $responseFolderCreateDecoded['folder-id'];
+
+        $this->assertTrue(is_numeric($folderId));
+
+        $this->log_folder_id($folderId);
+
+        $responseToCreate = $this->call('PUT', '/soundslice/create', ['folder-id' => $folderId]);
+
+        $responseToCreateDecoded = (array) json_decode($responseToCreate->getContent());
+        $this->log_score_slug($responseToCreateDecoded['slug']);
+        $this->dummyScoresToDeleteOnTearDown[] = $responseToCreateDecoded['slug'];
+
+        $this->assertEquals(201, $responseToCreate->getStatusCode());
+    }
+
+    public function test_create_nested_folder()
+    {
+        $grandParentId = self::TEST_FOLDER_ID;
+        $responseFolderCreate = '';
+
+        $options = [
+            'name' => $this->getNameForADummy('folder'),
+            'parent_id' => $grandParentId
+        ];
+        $responseParentFolderCreate = $this->call('PUT', 'soundslice/folder/create', $options);
+
+        $responseParentFolderCreateDecoded = (array) json_decode($responseParentFolderCreate->getContent());
+
+        $parentFolderId = $responseParentFolderCreateDecoded['folder-id'];
+
+        $this->assertTrue(is_numeric($parentFolderId));
+
+        $this->log_folder_id($parentFolderId);
+
+        $options = [
+            'name' => $this->getNameForADummy('folder'),
+            'parent_id' => $parentFolderId
+        ];
+        $responseFolderCreate = $this->call('PUT', 'soundslice/folder/create', $options);
+
+        $responseFolderCreateDecoded = (array) json_decode($responseFolderCreate->getContent());
+
+        $folderId = $responseFolderCreateDecoded['folder-id'];
+
+        $this->assertTrue(is_numeric($folderId));
+
+        $this->log_folder_id($folderId);
+
+        $responseToCreate = $this->call('PUT', '/soundslice/create', ['folder-id' => $folderId]);
+
+        $responseToCreateDecoded = (array) json_decode($responseToCreate->getContent());
+        $this->log_score_slug($responseToCreateDecoded['slug']);
+        $this->dummyScoresToDeleteOnTearDown[] = $responseToCreateDecoded['slug'];
+
+        $this->assertEquals(201, $responseToCreate->getStatusCode());
+    }
+
+    public function test_create_folder_validation_failure()
+    {
+        $parentId = self::TEST_FOLDER_ID;
+
+        $options = ['name' => '', 'parent_id' => $parentId];
+        $response = $this->call('PUT', 'soundslice/folder/create', $options);
+
+        $expected = json_encode(['errors' => [[
+            'status' => 'Bad Request',
+            'code' => 400,
+            'title' => 'create folder' . ' request validation failure',
+            'detail' => ['name' => [0 => 'The name field is required.']]
+        ] ]]);
+
+        $this->assertEquals($expected, $response->getContent());
+        $this->assertEquals(400, $response->getStatusCode());
+    }
+
+    public function test_create_folder_failure_invalid_parent_id()
+    {
+        $parentId = rand(9999999000, 9999999999);
+
+        $name = $this->getNameForADummy('folder');
+
+        $options = ['name' => $name, 'parent_id' => $parentId];
+        $response = $this->call('PUT', 'soundslice/folder/create', $options);
+
+        $expectedSubMsg = 'Client error: `POST https://www.soundslice.com/api/v1/folders/` resulted in a `422 ' .
+            'Unknown Status Code` response:' . PHP_EOL .
+            '{"error": "The parent_id was invalid or not owned by your account."}' . PHP_EOL;
+        $expected = json_encode(['errors' => [[
+                'status' => 'error',
+                'code' => 500,
+                'title' => 'create folder failed',
+                'detail' => 'Param("name"): "' . $name . '", error message: "' . $expectedSubMsg . '".'
+        ]]]);
+
+        $this->assertEquals($expected, $response->getContent());
         $this->assertEquals(500, $response->getStatusCode());
     }
 
 
-    public function test_delete_score_validation_failure()
-    {
-        $this->markTestIncomplete();
-    }
-
-
-    public function test_create_folder()
-    {
-        $this->markTestIncomplete();
-    }
-
-
-    public function test_create_nested_folder()
-    {
-        $this->markTestIncomplete();
-    }
-
-
-    public function test_create_folder_validation_failure()
-    {
-        $this->markTestIncomplete();
-    }
-
-
-    public function test_create_folder_failure_invalid_parent_id()
-    {
-        $this->markTestIncomplete();
-    }
-
 
     public function test_delete_folder()
     {
-        $this->markTestIncomplete();
-    }
+        $this->createDummyFolder();
 
+        $response = $this->call('delete', 'soundslice/folder/delete/' . $this->folderId);
+
+        $deleted = ((array) json_decode($response->getContent()))['deleted'];
+
+        $this->assertTrue($deleted);
+        $this->assertEquals(200, $response->getStatusCode());
+    }
 
     public function test_delete_folder_not_found()
     {
-        $this->markTestIncomplete();
+        $folderId = rand(999999999000, 999999999999);
+
+        $response = $this->call('delete', 'soundslice/folder/delete/' . $folderId);
+
+        $expected = json_encode(['errors' => [
+            [
+                'status' => 'error',
+                'code' => 500,
+                'title' => 'delete folder failed',
+                //'detail' => 'Param ("id"): "' . $folderId . '", error message: "' . $expectedSubMsg . '".'
+                'detail' => 'Param ("id"): "' . $folderId . '", error message: "Client error: ' .
+                    '`DELETE https://www.soundslice.com/api/v1/folders/' . $folderId . '/` resulted in a `404 Not ' .
+                    'Found` response:' . PHP_EOL . '<!DOCTYPE html>' . PHP_EOL .
+                    '<!--[if lt IE 8]>   <html class="lte8"> <![endif]-->' . PHP_EOL .
+                    '<!--[if IE 8]>     <html class="ie8 lte8"> <![endif (truncated...)' . PHP_EOL . '".'
+            ]
+        ]]);
+
+        $this->assertEquals($expected, $response->getContent());
+        $this->assertEquals(500, $response->getStatusCode());
     }
 
-
-    public function test_delete_folder_validation_failure()
+    public function test_delete_folder_id_omitted()
     {
-        $this->markTestIncomplete();
+        $response = $this->call('delete', 'soundslice/folder/delete/');
+
+        $this->assertEquals(404, $response->getStatusCode());
     }
 
+
+
+    // 6. test_create_notation -----------------------------------------------------------------------------------------
 
     public function test_create_notation()
     {
-        $this->markTestIncomplete();
+        $assetUrl = 'https://s3.us-east-2.amazonaws.com/soundslice/DTME+-+Week+5+-+soundslice-ex3.musicxml';
+
+        $score = $this->createDummyScore();
+
+        $response = $this->call('put', 'soundslice/notation/', [
+            'slug' => $score['slug'],
+            'asset-url' => $assetUrl
+        ]);
+
+        $notation = ((array) json_decode($response->getContent()))['notation'];
+
+        $this->assertEquals(201, $response->getStatusCode());
+        $this->assertTrue($notation);
     }
 
-
-    public function test_create_notation_validation_failure()
+    public function test_create_notation_validation_failure_missing_slug()
     {
-        $this->markTestIncomplete();
+        $assetUrl = 'https://s3.us-east-2.amazonaws.com/soundslice/DTME+-+Week+5+-+soundslice-ex3.musicxml';
+
+        $response = $this->call('put', 'soundslice/notation/', ['asset-url' => $assetUrl]);
+
+        $expected = json_encode(['errors' => [[
+            'status' => 'Bad Request',
+            'code' => 400,
+            'title' => 'create notation' . ' request validation failure',
+            'detail' => ['slug' => [0 => 'The slug field is required.']]
+        ] ]]);
+
+        $this->assertEquals($expected, $response->getContent());
+        $this->assertEquals(400, $response->getStatusCode());
     }
 
-
-    public function test_create_notation_upload_more_than_one()
+    public function test_create_notation_validation_failure_missing_asset_url()
     {
-        $this->markTestIncomplete();
+        $score = $this->createDummyScore();
+
+        $response = $this->call('put', 'soundslice/notation/', [
+            'slug' => $score['slug'],
+            'asset-url' => ''
+        ]);
+
+        $expected = json_encode(['errors' => [[
+            'status' => 'Bad Request',
+            'code' => 400,
+            'title' => 'create notation' . ' request validation failure',
+            'detail' => ['asset-url' => [0 => 'The asset-url field is required.']]
+        ] ]]);
+
+        $this->assertEquals($expected, $response->getContent());
+        $this->assertEquals(400, $response->getStatusCode());
     }
 
-
-    public function test_create_notation_with_same_values()
+    public function test_create_notation_validation_failure_asset_not_url()
     {
-        $this->markTestIncomplete();
+        $score = $this->createDummyScore();
+
+        $response = $this->call('put', 'soundslice/notation/', [
+            'slug' => $score['slug'],
+            'asset-url' => $this->faker->words(3, true)
+        ]);
+
+        $expected = json_encode(['errors' => [[
+            'status' => 'Bad Request',
+            'code' => 400,
+            'title' => 'create notation' . ' request validation failure',
+            'detail' => ['asset-url' => [0 => 'The asset-url format is invalid.']]
+        ] ]]);
+
+        $this->assertEquals($expected, $response->getContent());
+        $this->assertEquals(400, $response->getStatusCode());
     }
+
+
+
+    // 7. test_edit_score ----------------------------------------------------------------------------------------------
+
+    public function test_move_score()
+    {
+        $score = $this->createDummyScore();
+        $firstFolderCreated = $this->folderId;
+        $destination = $this->createDummyFolder(self::TEST_FOLDER_ID, true);
+        $this->assertNotEquals($firstFolderCreated, $destination);
+
+        $response = $this->call('POST', 'soundslice/move/', [
+            'slug' => $score['slug'],
+            'folder-id' => $destination
+        ]);
+
+        $contentDecoded = json_decode($response->getContent());
+        $actualFolderId = ((array) $contentDecoded)['folder-id'];
+        $this->assertEquals(201, $response->getStatusCode());
+        $this->assertEquals($destination, $actualFolderId);
+    }
+
+    public function test_move_score_validation_failure_missing_slug()
+    {
+        $firstFolderCreated = $this->folderId;
+        $destination = $this->createDummyFolder(self::TEST_FOLDER_ID, true);
+        $this->assertNotEquals($firstFolderCreated, $destination);
+
+        $response = $this->call('POST', 'soundslice/move/', [
+            'folder-id' => $destination
+        ]);
+
+        $expected = json_encode(['errors' => [[
+            'status' => 'Bad Request',
+            'code' => 400,
+            'title' => 'move score' . ' request validation failure',
+            'detail' => ['slug' => [0 => 'The slug field is required.']]
+        ] ]]);;
+
+        $this->assertEquals(400, $response->getStatusCode());
+        $this->assertEquals($expected, $response->getContent());
+    }
+
+    public function test_move_score_validation_failure_missing_destination()
+    {
+        $score = $this->createDummyScore();
+        $firstFolderCreated = $this->folderId;
+        $destination = $this->createDummyFolder(self::TEST_FOLDER_ID, true);
+        $this->assertNotEquals($firstFolderCreated, $destination);
+
+        $response = $this->call('POST', 'soundslice/move/', [
+            'slug' => $score['slug']
+        ]);
+
+        $expected = json_encode(['errors' => [[
+            'status' => 'Bad Request',
+            'code' => 400,
+            'title' => 'move score' . ' request validation failure',
+            'detail' => ['folder-id' => [0 => 'The folder-id field is required.']]
+        ] ]]);;
+
+        $this->assertEquals(400, $response->getStatusCode());
+        $this->assertEquals($expected, $response->getContent());
+    }
+
+    public function test_move_score_validation_failure_destination_not_ours()
+    {
+        $score = $this->createDummyScore();
+        $firstFolderCreated = $this->folderId;
+        $destination = $this->createDummyFolder(self::TEST_FOLDER_ID, true);
+        $this->assertNotEquals($firstFolderCreated, $destination);
+
+        $response = $this->call('POST', 'soundslice/move/', [
+            'slug' => $score['slug'],
+            'folder-id' => rand(999999000, 999999999)
+        ]);
+
+        $expected = json_encode(['errors' => [[
+            'status' => 'error',
+            'code' => 500,
+            'title' => 'score move error',
+            'detail' => 'Client error: `POST https://www.soundslice.com/api/v1/scores/' . $score['slug'] .
+                '/move/` resulted in a `422 Unknown Status Code` response:' . PHP_EOL .
+                '{"error": "Invalid folder ID."}' . PHP_EOL
+        ]]]);
+
+        $this->assertEquals(500, $response->getStatusCode());
+        $this->assertEquals($expected, $response->getContent());
+    }
+
+
 
     // -----------------------------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+
+
+    // 99. (helper function) runs as test case and deletes scores created in testing ------------------------------------
 
     /**
      * This isn't actually a test - it's just a way of deleting scores created in testing. Otherwise we have to

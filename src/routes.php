@@ -21,13 +21,13 @@ Route::prefix('soundslice')->group(function () {
     )->name('soundslice.list');
 
     Route::delete(
-        'delete',
+        'delete/{slug}',
         SoundsliceJsonController::class . '@delete'
     )->name('soundslice.delete');
 
     Route::post(
         'move',
-        SoundsliceJsonController::class . '@move'
+        SoundsliceJsonController::class . '@moveScore'
     )->name('soundslice.move');
 
     Route::prefix('folder')->group(function(){
@@ -37,7 +37,7 @@ Route::prefix('soundslice')->group(function () {
         )->name('soundslice.folder.create');
 
         Route::delete(
-            'delete',
+            'delete/{id}',
             SoundsliceJsonController::class . '@deleteFolder'
         )->name('soundslice.folder.delete');
     });
