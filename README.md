@@ -125,19 +125,6 @@ Each error item will have the fields as per the example below:
 Validation Errors
 ------------------------------------------------------------------------------------------------------------------------
 
-
-### TL;DR
-
-`400 Bad Request` with data:
-
-* field that failed: foo
-    * what was wrong: bar
-    * what was wrong: baz
-* field that failed: qux
-    * what was wrong: quxx
-
-
-
 ### Details
 
 Will return `400 Bad Request` with an "error" object as the data. The `detail` item in that error with have information
@@ -166,8 +153,6 @@ than 16 characters we'll see something like this:
 }
 ```
 
-Note: that failure is for just one field.
-
 If there was that failure - two validation failures on just one field, and then validation failure on a whole other
 field, it would look like this: (let's say the "artist" field is manditory)
 
@@ -192,8 +177,7 @@ field, it would look like this: (let's say the "artist" field is manditory)
 }
 ```
 
-The value will be a human-friendly explanation of why the validation.
-
+Detail sub-values are a human-friendly reason for failure.
 
 
 Methods
