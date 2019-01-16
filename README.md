@@ -130,11 +130,11 @@ Validation Errors
 
 `400 Bad Request` with data:
 
-* field that failed
-    * what was wrong
-    * what was wrong
-* field that failed
-    * what was wrong
+* field that failed: foo
+    * what was wrong: bar
+    * what was wrong: baz
+* field that failed: qux
+    * what was wrong: quxx
 
 
 
